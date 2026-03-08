@@ -21,6 +21,7 @@ import com.example.smartretailph.ui.notifications.NotificationsBottomSheet
 import com.example.smartretailph.ui.orders.OrdersScreen
 import com.example.smartretailph.ui.reports.ReportsScreen
 import kotlinx.coroutines.launch
+import com.example.smartretailph.ui.inventory.InventoryManagementScreen
 
 enum class MainTab(
     val route: String,
@@ -142,7 +143,10 @@ fun MainScaffold(
                     icon = { Icon(Icons.Default.Inventory2, contentDescription = null) },
                     label = { Text("Inventory Management") },
                     selected = false,
-                    onClick = {}
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate(MainRoutes.INVENTORY_MANAGEMENT)
+                    }
                 )
 
                 NavigationDrawerItem(
@@ -313,6 +317,10 @@ fun MainScaffold(
                     composable(MainRoutes.ORDERS) { OrdersScreen() }
 
                     composable(MainRoutes.REPORTS) { ReportsScreen() }
+
+                    composable(MainRoutes.INVENTORY_MANAGEMENT) {
+                        InventoryManagementScreen()
+                    }
                 }
 
                 if (showNotifications) {

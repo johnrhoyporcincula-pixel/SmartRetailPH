@@ -13,5 +13,6 @@ object MainRoutes {
     const val ORDERS = "main/orders"
     const val REPORTS = "main/reports"
     const val NOTIFICATIONS = "main/notifications"
+    const val INVENTORY_MANAGEMENT = "main/inventory_management"
 }
 
