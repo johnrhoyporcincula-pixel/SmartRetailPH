@@ -14,13 +14,14 @@ import java.util.Date
 import java.util.Locale
 
 data class ReportsState(
-    val totalProducts: Int = 0,
-    val totalOrders: Int = 0,
     val totalRevenue: Double = 0.0,
+    val totalOrders: Int = 0,
+    val totalProducts: Int = 0,
+    val lowStockItems: List<Pair<String, Int>> = emptyList(),
     val salesByDay: Map<String, Double> = emptyMap(),
+    val salesByCategory: Map<String, Double> = emptyMap(),  // <- dynamic
     val topProducts: List<Pair<String, Int>> = emptyList(),
-    val forecastNextDay: Double = 0.0,
-    val lowStockItems: List<Pair<String, Int>> = emptyList()
+    val forecastNextDay: Double = 0.0
 )
 
 class ReportsViewModel : ViewModel() {

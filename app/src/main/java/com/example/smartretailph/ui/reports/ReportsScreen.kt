@@ -32,10 +32,17 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.smartretailph.viewmodel.ReportsViewModel
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.platform.LocalContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.runtime.*
+
+enum class ReportPeriod {
+    TODAY, WEEK, MONTH, YEAR
+}
 
 @Composable
 fun ReportsScreen(
@@ -43,6 +50,7 @@ fun ReportsScreen(
 ) {
     val state by reportsViewModel.state.collectAsState()
     val context = LocalContext.current
+    var selectedPeriod by remember { mutableStateOf(ReportPeriod.TODAY) }
 
     LazyColumn(
         modifier = Modifier
@@ -51,7 +59,31 @@ fun ReportsScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Text("Reports & Analytics", style = MaterialTheme.typography.titleLarge)
+            Column {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+
+                    Button(onClick = { selectedPeriod = ReportPeriod.TODAY }) {
+                        Text("Today")
+                    }
+
+                    Button(onClick = { selectedPeriod = ReportPeriod.WEEK }) {
+                        Text("This Week")
+                    }
+
+                    Button(onClick = { selectedPeriod = ReportPeriod.MONTH }) {
+                        Text("This Month")
+                    }
+
+                    Button(onClick = { selectedPeriod = ReportPeriod.YEAR }) {
+                        Text("This Year")
+                    }
+                }
+            }
         }
 
         // Summary metrics
@@ -97,13 +129,27 @@ fun ReportsScreen(
             }
         }
 
-        // Sales chart (last 14 days)
+        // Sales overview graph
         if (state.salesByDay.isNotEmpty()) {
             item {
-                Text("Sales Chart (Last 14 Days)", style = MaterialTheme.typography.titleMedium)
+                SalesOverviewGraph(state.salesByDay)
             }
+        }
+
+        // Sales by category
+        if (state.salesByCategory.isNotEmpty()) {
             item {
-                SimpleSalesChart(state.salesByDay)
+                SalesByCategoryChart(state.salesByCategory)
+            }
+        } else {
+            item {
+                Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                    Text(
+                        "No category sales data available",
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
         }
 
@@ -162,54 +208,112 @@ fun ReportsScreen(
 }
 
 @Composable
-private fun SimpleSalesChart(salesByDay: Map<String, Double>) {
-    val last14 = salesByDay.entries.sortedBy { it.key }.takeLast(14)
-    if (last14.isEmpty()) return
+private fun SalesOverviewGraph(
+    salesByDay: Map<String, Double>
+) {
+    val last7 = salesByDay.entries.sortedBy { it.key }.takeLast(7)
 
-    val maxValue = last14.maxOf { it.value }
-    val chartHeight = 200.dp
+    if (last7.isEmpty()) return
 
-    Column(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
+            .height(260.dp)
     ) {
-        Row(
+
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(chartHeight),
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
-            verticalAlignment = androidx.compose.ui.Alignment.Bottom
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
-            last14.forEach { entry ->
-                val barHeight = if (maxValue > 0) (entry.value.toDouble() / maxValue.toDouble() * chartHeight.value).dp else 0.dp
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                    horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Bottom
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.8f)
-                            .height(barHeight)
-                            .background(MaterialTheme.colorScheme.primary)
-                    )
-                    Text(
-                        entry.key.takeLast(5),
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(2.dp)
-                    )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+
+                Text(
+                    "Sales Overview",
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                Row {
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .width(12.dp)
+                                .height(12.dp)
+                                .background(androidx.compose.ui.graphics.Color.Blue)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text("Sales")
+                    }
+
+                    Spacer(Modifier.width(12.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .width(12.dp)
+                                .height(12.dp)
+                                .background(androidx.compose.ui.graphics.Color.Green)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text("Orders")
+                    }
                 }
             }
+
+            Spacer(Modifier.height(16.dp))
+
+            LineGraph(last7)
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            "Max: $${"%,.0f".format(maxValue)}",
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.align(androidx.compose.ui.Alignment.End)
-        )
+    }
+}
+
+@Composable
+private fun LineGraph(data: List<Map.Entry<String, Double>>) {
+
+    val maxValue = data.maxOf { it.value }
+
+    androidx.compose.foundation.Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp)
+    ) {
+
+        val width = size.width
+        val height = size.height
+
+        val stepX = width / (data.size - 1)
+
+        var previousX = 0f
+        var previousY = 0f
+
+        data.forEachIndexed { index, entry ->
+
+            val x = index * stepX
+            val y = height - (entry.value / maxValue * height).toFloat()
+
+            drawCircle(
+                color = androidx.compose.ui.graphics.Color.Blue,
+                radius = 8f,
+                center = androidx.compose.ui.geometry.Offset(x, y)
+            )
+
+            if (index > 0) {
+                drawLine(
+                    color = androidx.compose.ui.graphics.Color.Blue,
+                    start = androidx.compose.ui.geometry.Offset(previousX, previousY),
+                    end = androidx.compose.ui.geometry.Offset(x, y),
+                    strokeWidth = 4f
+                )
+            }
+
+            previousX = x
+            previousY = y
+        }
     }
 }
 
@@ -228,6 +332,113 @@ private fun exportSalesCSV(context: Context, salesByDay: Map<String, Double>) {
         Toast.makeText(context, "Exported to $fname", Toast.LENGTH_SHORT).show()
     }.onFailure {
         Toast.makeText(context, "Export failed", Toast.LENGTH_SHORT).show()
+    }
+}
+
+@Composable
+private fun SalesByCategoryChart(
+    categoryData: Map<String, Double>
+) {
+
+    val total = categoryData.values.sum()
+
+    val colors = listOf(
+        androidx.compose.ui.graphics.Color(0xFF4285F4),
+        androidx.compose.ui.graphics.Color(0xFF34A853),
+        androidx.compose.ui.graphics.Color(0xFFFBBC05),
+        androidx.compose.ui.graphics.Color(0xFFEA4335),
+        androidx.compose.ui.graphics.Color(0xFF9C27B0),
+        androidx.compose.ui.graphics.Color(0xFF00ACC1)
+    )
+
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+
+            Text(
+                "Sales by Category",
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+
+                CategoryPieChart(categoryData, colors)
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+
+                    categoryData.entries.forEachIndexed { index, entry ->
+
+                        val percent = (entry.value / total) * 100
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        ) {
+
+                            Box(
+                                modifier = Modifier
+                                    .width(12.dp)
+                                    .height(12.dp)
+                                    .background(colors[index % colors.size])
+                            )
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            Text(
+                                "${entry.key} - ${"%.1f".format(percent)}%"
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryPieChart(
+    categoryData: Map<String, Double>,
+    colors: List<androidx.compose.ui.graphics.Color>
+) {
+
+    val total = categoryData.values.sum()
+
+    androidx.compose.foundation.Canvas(
+        modifier = Modifier
+            .width(150.dp)
+            .height(150.dp)
+    ) {
+
+        var startAngle = -90f
+
+        categoryData.entries.forEachIndexed { index, entry ->
+
+            val sweep = (entry.value / total * 360).toFloat()
+
+            drawArc(
+                color = colors[index % colors.size],
+                startAngle = startAngle,
+                sweepAngle = sweep,
+                useCenter = true
+            )
+
+            startAngle += sweep
+        }
     }
 }
 
