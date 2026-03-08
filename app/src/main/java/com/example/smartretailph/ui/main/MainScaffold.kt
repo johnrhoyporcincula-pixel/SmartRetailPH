@@ -1,50 +1,19 @@
 package com.example.smartretailph.ui.main
 
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Dashboard
-import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.ReceiptLong
-import androidx.compose.material.icons.filled.SsidChart
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.rememberDrawerState
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.ui.Alignment
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.graphics.Color
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.*
 import com.example.smartretailph.ui.dashboard.DashboardScreen
 import com.example.smartretailph.ui.inventory.InventoryScreen
 import com.example.smartretailph.ui.navigation.MainRoutes
@@ -68,9 +37,16 @@ enum class MainTab(
 fun MainScaffold(
     onLogout: () -> Unit
 ) {
+
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+
+    val context = LocalContext.current
+    val versionName = remember {
+        context.packageManager
+            .getPackageInfo(context.packageName, 0).versionName
+    }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: MainRoutes.DASHBOARD
@@ -95,24 +71,106 @@ fun MainScaffold(
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
+
             ModalDrawerSheet {
+
+                // HEADER
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.primary)
+                        .padding(20.dp)
+                ) {
+
+                    Text(
+                        text = "Juan Dela Cruz",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+
+                    Text(
+                        text = "Store Manager",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+
                 Text(
                     text = "Main Menu",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(16.dp)
                 )
-                NavigationDrawerItem(
-                    label = { Text("Profile") },
-                    selected = false,
-                    onClick = { /* TODO: Profile */ }
+
+                // ACCOUNT SECTION
+                Text(
+                    text = "Account",
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
                 )
+
                 NavigationDrawerItem(
-                    label = { Text("Settings") },
+                    icon = { Icon(Icons.Default.Person, contentDescription = null) },
+                    label = { Text("Profile Settings") },
                     selected = false,
-                    onClick = { /* TODO: Settings */ }
+                    onClick = {}
                 )
+
                 NavigationDrawerItem(
-                    label = { Text("Logout") },
+                    icon = { Icon(Icons.Default.Notifications, contentDescription = null) },
+                    label = { Text("Notifications") },
+                    selected = false,
+                    onClick = {}
+                )
+
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.Default.Tune, contentDescription = null) },
+                    label = { Text("Preferences") },
+                    selected = false,
+                    onClick = {}
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                // APP SECTION
+                Text(
+                    text = "App",
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
+                )
+
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.Default.Inventory2, contentDescription = null) },
+                    label = { Text("Inventory Management") },
+                    selected = false,
+                    onClick = {}
+                )
+
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.Default.Security, contentDescription = null) },
+                    label = { Text("Privacy & Security") },
+                    selected = false,
+                    onClick = {}
+                )
+
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.Default.Help, contentDescription = null) },
+                    label = { Text("Help & Support") },
+                    selected = false,
+                    onClick = {}
+                )
+
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.Default.Info, contentDescription = null) },
+                    label = { Text("About (v$versionName)") },
+                    selected = false,
+                    onClick = {}
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.Default.Logout, contentDescription = null) },
+                    label = { Text("Log Out") },
                     selected = false,
                     onClick = {
                         scope.launch { drawerState.close() }
@@ -122,16 +180,43 @@ fun MainScaffold(
             }
         }
     ) {
+
         Scaffold(
+
             topBar = {
+
                 CenterAlignedTopAppBar(
-                    title = { Text(currentTopBarTitle, color = MaterialTheme.colorScheme.onPrimary) },
+
+                    title = {
+                        Text(
+                            currentTopBarTitle,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    },
+
                     navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = MaterialTheme.colorScheme.onPrimary)
+
+                        IconButton(
+                            onClick = {
+                                scope.launch {
+                                    if (drawerState.isClosed) {
+                                        drawerState.open()
+                                    } else {
+                                        drawerState.close()
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                Icons.Default.Menu,
+                                contentDescription = "Menu",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
                         }
                     },
+
                     actions = {
+
                         IconButton(onClick = { showNotifications = true }) {
                             Icon(
                                 Icons.Default.Notifications,
@@ -140,47 +225,65 @@ fun MainScaffold(
                             )
                         }
                     },
-                    colors = androidx.compose.material3.TopAppBarDefaults.centerAlignedTopAppBarColors(
+
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 )
             },
+
             bottomBar = {
+
                 NavigationBar {
+
                     mainTabs.forEach { tab ->
+
                         NavigationBarItem(
                             selected = currentRoute == tab.route,
+
                             onClick = {
+
                                 navController.navigate(tab.route) {
+
                                     launchSingleTop = true
+
                                     popUpTo(navController.graph.findStartDestination().id) {
                                         saveState = true
                                     }
+
                                     restoreState = true
                                 }
                             },
+
                             icon = {
+
                                 val icon = when (tab) {
                                     MainTab.DASHBOARD -> Icons.Default.Dashboard
                                     MainTab.INVENTORY -> Icons.Default.Inventory2
                                     MainTab.ORDERS -> Icons.Default.ReceiptLong
                                     MainTab.REPORTS -> Icons.Default.SsidChart
                                 }
+
                                 Icon(icon, contentDescription = tab.title)
                             },
+
                             label = { Text(tab.title) }
                         )
                     }
                 }
             }
+
         ) { innerPadding ->
+
             Box(modifier = Modifier.padding(innerPadding)) {
+
                 NavHost(
                     navController = navController,
-                    startDestination = MainRoutes.DASHBOARD,
-                    modifier = Modifier
+                    startDestination = MainRoutes.DASHBOARD
                 ) {
+
                     composable(MainRoutes.DASHBOARD) {
+
                         DashboardScreen(
                             onNavigateToInventory = {
                                 navController.navigate(MainRoutes.INVENTORY) {
@@ -204,13 +307,16 @@ fun MainScaffold(
                             }
                         )
                     }
+
                     composable(MainRoutes.INVENTORY) { InventoryScreen() }
+
                     composable(MainRoutes.ORDERS) { OrdersScreen() }
+
                     composable(MainRoutes.REPORTS) { ReportsScreen() }
                 }
 
                 if (showNotifications) {
-                    // Dimmed backdrop that dismisses when tapped
+
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -218,17 +324,17 @@ fun MainScaffold(
                             .clickable { showNotifications = false }
                     )
 
-                    // Bottom sheet content
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .align(Alignment.BottomCenter)
                     ) {
-                        NotificationsBottomSheet(onDismiss = { showNotifications = false })
+                        NotificationsBottomSheet(
+                            onDismiss = { showNotifications = false }
+                        )
                     }
                 }
             }
         }
     }
 }
-

@@ -1,0 +1,200 @@
+================================================================================
+                    SmartRetailPH - Code Structure Guide
+================================================================================
+Use this file to quickly find where to edit specific features of the app.
+================================================================================
+
+--------------------------------------------------------------------------------
+1. MAIN MENU / NAVIGATION
+--------------------------------------------------------------------------------
+
+  Main scaffold (bottom nav, drawer, top bar)
+    → app/src/main/java/com/example/smartretailph/ui/main/MainScaffold.kt
+
+  Bottom navigation (Dashboard, Inventory, Orders, Reports)
+    → Same file: MainScaffold.kt (NavigationBar with 4 tabs)
+
+  Side drawer (Profile, Settings, Logout)
+    → Same file: MainScaffold.kt (ModalNavigationDrawer)
+
+  Top app bar (title, hamburger menu, notification icon)
+    → Same file: MainScaffold.kt (CenterAlignedTopAppBar)
+
+  Route definitions (screen names)
+    → app/src/main/java/com/example/smartretailph/ui/navigation/Routes.kt
+
+  App entry point
+    → app/src/main/java/com/example/smartretailph/MainActivity.kt
+
+
+--------------------------------------------------------------------------------
+2. NOTIFICATION POPUP / BOTTOM SHEET
+--------------------------------------------------------------------------------
+
+  Notifications bottom sheet (the popup when you tap the bell icon)
+    → app/src/main/java/com/example/smartretailph/ui/notifications/NotificationsScreen.kt
+
+  Where it is triggered (notification icon in top bar)
+    → app/src/main/java/com/example/smartretailph/ui/main/MainScaffold.kt
+      (around lines 133–139 and 211–227)
+
+
+--------------------------------------------------------------------------------
+3. INVENTORY
+--------------------------------------------------------------------------------
+
+  Inventory screen (product grid, search, category filters, POS flow)
+    → app/src/main/java/com/example/smartretailph/ui/inventory/InventoryScreen.kt
+
+  Product card (how each product looks in the grid)
+    → Same file: InventoryScreen.kt (ProductCard composable)
+
+  Checkout dialog (customer name, payment, confirm)
+    → Same file: InventoryScreen.kt (around lines 263–315, AlertDialog)
+
+  Add-to-cart bottom sheet (quantity picker when you tap a product)
+    → app/src/main/java/com/example/smartretailph/ui/pos/CartProductSheet.kt
+
+  Cart bottom sheet (cart list, remove items, checkout button)
+    → app/src/main/java/com/example/smartretailph/ui/pos/CartBottomSheet.kt
+
+  Inventory data logic (add/update/delete products)
+    → app/src/main/java/com/example/smartretailph/viewmodel/InventoryViewModel.kt
+
+  Product data storage
+    → app/src/main/java/com/example/smartretailph/data/repositories/InventoryRepository.kt
+
+  Product model (fields like name, price, stock)
+    → app/src/main/java/com/example/smartretailph/data/models/Product.kt
+
+
+--------------------------------------------------------------------------------
+4. DASHBOARD
+--------------------------------------------------------------------------------
+
+  Dashboard screen (welcome card, overview cards, quick actions)
+    → app/src/main/java/com/example/smartretailph/ui/dashboard/DashboardScreen.kt
+
+  Dashboard logic (totals, revenue, low stock, today's orders)
+    → app/src/main/java/com/example/smartretailph/viewmodel/DashboardViewModel.kt
+
+
+--------------------------------------------------------------------------------
+5. ORDERS
+--------------------------------------------------------------------------------
+
+  Orders screen (stat cards, filter chips, order list)
+    → app/src/main/java/com/example/smartretailph/ui/orders/OrdersScreen.kt
+
+  Order receipt popup (when you tap an order)
+    → Same file: OrdersScreen.kt (AlertDialog with receipt)
+
+  Orders logic (list, add, delete)
+    → app/src/main/java/com/example/smartretailph/viewmodel/OrdersViewModel.kt
+
+  Orders data storage
+    → app/src/main/java/com/example/smartretailph/data/repositories/OrdersRepository.kt
+
+  Order & OrderItem models
+    → app/src/main/java/com/example/smartretailph/data/models/Order.kt
+    → app/src/main/java/com/example/smartretailph/data/models/OrderItem.kt
+
+
+--------------------------------------------------------------------------------
+6. REPORTS
+--------------------------------------------------------------------------------
+
+  Reports screen (period filters, charts, CSV export, low-stock alerts)
+    → app/src/main/java/com/example/smartretailph/ui/reports/ReportsScreen.kt
+
+  Reports logic (revenue, sales by day, top products, forecast)
+    → app/src/main/java/com/example/smartretailph/viewmodel/ReportsViewModel.kt
+
+  CSV export utility
+    → app/src/main/java/com/example/smartretailph/util/CSVExporter.kt
+
+
+--------------------------------------------------------------------------------
+7. CART (POS)
+--------------------------------------------------------------------------------
+
+  Cart state (items, add/remove, totals)
+    → app/src/main/java/com/example/smartretailph/viewmodel/CartViewModel.kt
+
+
+--------------------------------------------------------------------------------
+8. AUTH (LOGIN / SIGN UP)
+--------------------------------------------------------------------------------
+
+  Login and SignUp screens
+    → app/src/main/java/com/example/smartretailph/ui/auth/AuthScreens.kt
+
+  Auth logic (login, sign up, logout)
+    → app/src/main/java/com/example/smartretailph/viewmodel/AuthViewModel.kt
+
+  Auth data storage
+    → app/src/main/java/com/example/smartretailph/data/repositories/AuthRepository.kt
+
+  User model
+    → app/src/main/java/com/example/smartretailph/data/models/User.kt
+
+
+--------------------------------------------------------------------------------
+9. THEME & STYLING
+--------------------------------------------------------------------------------
+
+  Compose theme (colors, typography)
+    → app/src/main/java/com/example/smartretailph/ui/theme/Theme.kt
+    → app/src/main/java/com/example/smartretailph/ui/theme/Color.kt
+    → app/src/main/java/com/example/smartretailph/ui/theme/Type.kt
+
+  XML resources (strings, colors, themes)
+    → app/src/main/res/values/strings.xml
+    → app/src/main/res/values/colors.xml
+    → app/src/main/res/values/themes.xml
+
+
+--------------------------------------------------------------------------------
+10. UTILITIES
+--------------------------------------------------------------------------------
+
+  Receipt generation
+    → app/src/main/java/com/example/smartretailph/util/ReceiptGenerator.kt
+
+  Receipts storage
+    → app/src/main/java/com/example/smartretailph/data/repositories/ReceiptsRepository.kt
+
+
+--------------------------------------------------------------------------------
+11. QUICK REFERENCE – "I want to edit..."
+--------------------------------------------------------------------------------
+
+  Main menu / bottom nav / drawer
+    → MainScaffold.kt
+
+  Notification popup
+    → NotificationsScreen.kt
+
+  Inventory / product grid / checkout dialog
+    → InventoryScreen.kt
+
+  Add-to-cart popup (quantity)
+    → CartProductSheet.kt
+
+  Cart popup (list of items)
+    → CartBottomSheet.kt
+
+  Dashboard
+    → DashboardScreen.kt
+
+  Orders / order list / receipt popup
+    → OrdersScreen.kt
+
+  Reports / charts / export
+    → ReportsScreen.kt
+
+  App icon / launcher
+    → app/src/main/res/drawable/ic_launcher_foreground.xml
+    → app/src/main/res/drawable/ic_launcher_background.xml
+
+================================================================================
