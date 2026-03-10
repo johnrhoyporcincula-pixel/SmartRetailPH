@@ -150,8 +150,9 @@ fun InventoryScreen(
                     ProductCard(
                         product = product,
                         onProductClick = {
-                            // Set the clicked product to show CartProductSheet
-                            sellProduct = product
+                            if (product.stockQuantity > 0) {   // ✅ Prevent selling if stock is zero
+                                sellProduct = product
+                            }
                         },
                         onDelete = { inventoryViewModel.deleteProduct(product.id) }
                     )
@@ -188,6 +189,7 @@ fun InventoryScreen(
     var showCheckoutDialog by remember { mutableStateOf(false) }
     var checkoutCustomerName by remember { mutableStateOf("Walk-in") }
     var checkoutPaymentMethod by remember { mutableStateOf("Cash") }
+    var cashReceived by remember { mutableStateOf("") }   // ✅ ADDED
     var pendingCartItems by remember { mutableStateOf<List<com.example.smartretailph.data.models.OrderItem>>(emptyList()) }
     var pendingCartTotal by remember { mutableStateOf(0.0) }
 
@@ -273,14 +275,89 @@ fun InventoryScreen(
                         singleLine = true
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row {
-                        Text("Payment: ", style = MaterialTheme.typography.bodyMedium)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        TextButton(onClick = { checkoutPaymentMethod = "Cash" }) { Text("Cash") }
-                        TextButton(onClick = { checkoutPaymentMethod = "Card" }) { Text("Card") }
+                    Text("Payment Method", style = MaterialTheme.typography.bodyMedium)
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text("Payment Method", style = MaterialTheme.typography.bodyMedium)
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+
+                        FilterChip(
+                            selected = checkoutPaymentMethod == "Cash",
+                            onClick = { checkoutPaymentMethod = "Cash" },
+                            label = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("💵")
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Cash")
+                                }
+                            }
+                        )
+
+                        FilterChip(
+                            selected = checkoutPaymentMethod == "Card",
+                            onClick = { checkoutPaymentMethod = "Card" },
+                            label = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("💳")
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Card")
+                                }
+                            }
+                        )
+
+                        FilterChip(
+                            selected = checkoutPaymentMethod == "GCash",
+                            onClick = { checkoutPaymentMethod = "GCash" },
+                            label = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("💙")
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("GCash")
+                                }
+                            }
+                        )
+
+                        FilterChip(
+                            selected = checkoutPaymentMethod == "PayMaya",
+                            onClick = { checkoutPaymentMethod = "PayMaya" },
+                            label = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("💚")
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("PayMaya")
+                                }
+                            }
+                        )
+
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("Total: $${"%.2f".format(pendingCartTotal)}", style = MaterialTheme.typography.bodyMedium)
+
+                    Text("Total: ₱${"%.2f".format(pendingCartTotal)}", style = MaterialTheme.typography.bodyMedium)
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = cashReceived,
+                        onValueChange = { cashReceived = it },
+                        label = { Text("Cash Received") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    val change = (cashReceived.toDoubleOrNull() ?: 0.0) - pendingCartTotal
+
+                    Text(
+                        text = "Change: ₱${"%.2f".format(change.coerceAtLeast(0.0))}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
             },
             confirmButton = {
@@ -308,6 +385,8 @@ fun InventoryScreen(
                     }
                     cartViewModel.clear()
                     showCheckoutDialog = false
+                    checkoutCustomerName = "Walk-in"
+                    cashReceived = ""
                 }) { Text("Confirm") }
             },
             dismissButton = {
@@ -327,7 +406,9 @@ fun ProductCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onProductClick() },
+            .clickable(enabled = product.stockQuantity > 0) {
+                onProductClick()
+            },
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -352,6 +433,20 @@ fun ProductCard(
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary
             )
+
+            Text(
+                text = "Stock: ${product.stockQuantity}",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (product.stockQuantity <= 5) Color.Red else Color.Gray
+            )
+
+            if (product.stockQuantity == 0) {
+                Text(
+                    text = "OUT OF STOCK",
+                    color = Color.Red,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
         }
     }
 }
