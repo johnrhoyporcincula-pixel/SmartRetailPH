@@ -1,5 +1,14 @@
 package com.example.smartretailph.ui.dashboard
 
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material.icons.filled.Report
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.background
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +48,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.times
+
+data class QuickAction(
+    val title: String,
+    val icon: ImageVector,
+    val colors: List<Color>,
+    val action: () -> Unit
+)
 
 @Composable
 fun DashboardScreen(
@@ -50,29 +68,70 @@ fun DashboardScreen(
 ) {
     val state by dashboardViewModel.state.collectAsState()
 
+    val quickActions = listOf(
+        QuickAction(
+            "Add Product",
+            Icons.Default.AddShoppingCart,
+            listOf(Color(0xFF2563EB), Color(0xFF3B82F6)),
+            onNavigateToInventory
+        ),
+        QuickAction(
+            "Scan Item",
+            Icons.Default.Inventory2,
+            listOf(Color(0xFF9333EA), Color(0xFFC084FC)),
+            onNavigateToInventory
+        ),
+        QuickAction(
+            "Stock Alert",
+            Icons.Default.Warning,
+            listOf(Color(0xFF16A34A), Color(0xFF4ADE80)),
+            onNavigateToInventory
+        ),
+        QuickAction(
+            "View Reports",
+            Icons.Default.SsidChart,
+            listOf(Color(0xFFF97316), Color(0xFFFB923C)),
+            onNavigateToReports
+        )
+    )
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
+
         item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                ),
-                shape = RoundedCornerShape(16.dp)
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            listOf(
+                                Color(0xFF2563EB),
+                                Color(0xFF1D4ED8)
+                            )
+                        ),
+                        shape = RoundedCornerShape(20.dp)
+                    )
+                    .padding(20.dp)
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
+
+                Column {
+
                     Text(
-                        text = "Welcome back, User!",
-                        color = MaterialTheme.colorScheme.onPrimary,
+                        text = "Welcome back, User! 👋",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
                     Text(
-                        text = "Here's your inventory overview for today.",
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f),
+                        text = "Here's your inventory overview for today",
+                        color = Color.White.copy(alpha = 0.9f),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -86,13 +145,28 @@ fun DashboardScreen(
                     .padding(top = 16.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+
                 // Row 1
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OverviewCard(title = "Total Items", value = state.totalProducts.toString(), modifier = Modifier.weight(1f))
-                    OverviewCard(title = "Total Revenue", value = "₱${"%.2f".format(state.totalRevenue)}", modifier = Modifier.weight(1f))
+
+                    OverviewCard(
+                        title = "Total Items",
+                        value = state.totalProducts.toString(),
+                        icon = Icons.Default.Inventory2,
+                        background = Color(0xFFDCEAFE),
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    OverviewCard(
+                        title = "Total Value",
+                        value = "₱${"%.2f".format(state.totalRevenue)}",
+                        icon = Icons.Default.SsidChart,
+                        background = Color(0xFFD1FAE5),
+                        modifier = Modifier.weight(1f)
+                    )
                 }
 
                 // Row 2
@@ -100,68 +174,93 @@ fun DashboardScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OverviewCard(title = "Low Stock", value = state.lowStock.toString(), modifier = Modifier.weight(1f))
-                    OverviewCard(title = "Orders", value = state.todaysOrdersCount.toString(), modifier = Modifier.weight(1f))
+
+                    OverviewCard(
+                        title = "Low Stock",
+                        value = state.lowStock.toString(),
+                        icon = Icons.Default.Warning,
+                        background = Color(0xFFFEF3C7),
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    OverviewCard(
+                        title = "Orders",
+                        value = state.todaysOrdersCount.toString(),
+                        icon = Icons.Default.ReceiptLong,
+                        background = Color(0xFFEDE9FE),
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }
 
-// Quick Actions Section
         item {
             Text(
                 text = "Quick Actions",
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 28.dp, bottom = 16.dp)
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 16.dp)
             )
         }
 
-// Quick Action Cards Grid (2x2)
         item {
-            Column(modifier = Modifier.fillMaxWidth()) {
-// Row 1: Quick Sale and Inventory
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    QuickActionCard(
-                        title = "Quick Sale",
-                        description = "Add items to cart",
-                        icon = Icons.Default.AddShoppingCart,
-                        modifier = Modifier.weight(1f),
-                        onClick = onNavigateToCart
-                    )
-                    QuickActionCard(
-                        title = "Inventory",
-                        description = "Check stock",
-                        icon = Icons.Default.Inventory2,
-                        modifier = Modifier.weight(1f),
-                        onClick = onNavigateToInventory
-                    )
-                }
 
-// Row 2: View Orders and View Reports
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    QuickActionCard(
-                        title = "Orders",
-                        description = "View all orders",
-                        icon = Icons.Default.ReceiptLong,
-                        modifier = Modifier.weight(1f),
-                        onClick = onNavigateToOrders
-                    )
-                    QuickActionCard(
-                        title = "Reports",
-                        description = "Sales analytics",
-                        icon = Icons.Default.SsidChart,
-                        modifier = Modifier.weight(1f),
-                        onClick = onNavigateToReports
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(((quickActions.size + 1) / 2) * 120.dp)
+            ) {
+
+                items(quickActions) { action ->
+
+                    GradientActionCard(
+                        title = action.title,
+                        icon = action.icon,
+                        colors = action.colors,
+                        onClick = action.action
                     )
                 }
             }
+        }
+
+        item { Spacer(modifier = Modifier.height(12.dp)) }
+        item { Spacer(modifier = Modifier.height(28.dp)) }
+
+        // Recent Activity
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+
+                Text(
+                    text = "Recent Activity",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    text = "View All",
+                    color = Color(0xFF2563EB)
+                )
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(12.dp)) }
+
+        item {
+            ActivityCard("Product Added", "Coca-Cola 500ml", "2h ago")
+        }
+
+        item {
+            ActivityCard("Stock Updated", "Whole Milk 1L", "4h ago")
+        }
+
+        item {
+            ActivityCard("Low Stock Alert", "White Bread", "6h ago")
         }
     }
 }
@@ -170,71 +269,136 @@ fun DashboardScreen(
 fun OverviewCard(
     title: String,
     value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    background: Color,
     modifier: Modifier = Modifier
 ) {
+
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = background
+        )
     ) {
-        Button(
-            onClick = { /* No click by default, you can add later */ },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            )
+
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth()
         ) {
-            Column(
+
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .size(36.dp)
+                    .background(
+                        Color.White.copy(alpha = 0.4f),
+                        shape = RoundedCornerShape(10.dp)
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall,
-                    textAlign = TextAlign.Center
-                )
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.headlineSmall,
-                    textAlign = TextAlign.Center
-                )
+                Icon(icon, contentDescription = null)
             }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
 
 @Composable
-fun QuickActionCard(
+fun ActivityCard(
     title: String,
-    description: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit = {}
+    subtitle: String,
+    time: String
 ) {
+
     Card(
-        modifier = modifier
-            .height(100.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        )
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 10.dp),
+        shape = RoundedCornerShape(14.dp)
     ) {
-        Column(
+
+        Row(
             modifier = Modifier
-                .padding(12.dp)
+                .padding(16.dp)
                 .fillMaxWidth(),
-            verticalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                modifier = Modifier.size(24.dp)
+
+            Column {
+
+                Text(
+                    text = title,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            Text(
+                text = time,
+                style = MaterialTheme.typography.bodySmall
             )
-            Text(title, style = MaterialTheme.typography.bodyMedium)
-            Text(description, style = MaterialTheme.typography.bodySmall)
         }
     }
 }
 
+@Composable
+fun GradientActionCard(
+    title: String,
+    icon: ImageVector,
+    colors: List<Color>,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {}
+) {
+
+    Card(
+        modifier = modifier.height(110.dp),
+        shape = RoundedCornerShape(16.dp),
+        onClick = onClick
+    ) {
+
+        Box(
+            modifier = Modifier
+                .background(Brush.horizontalGradient(colors))
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                Icon(
+                    icon,
+                    contentDescription = title,
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = title,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}

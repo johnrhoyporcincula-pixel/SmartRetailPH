@@ -1,5 +1,6 @@
 package com.example.smartretailph.ui.inventory
 
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -406,6 +407,7 @@ fun ProductCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .height(130.dp)   // ⭐ Force same height for all cards
             .clickable(enabled = product.stockQuantity > 0) {
                 onProductClick()
             },
@@ -416,15 +418,17 @@ fun ProductCard(
     ) {
         Column(
             modifier = Modifier
+                .fillMaxSize()
                 .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
 
             // Product name
             Text(
                 text = product.name,
                 style = MaterialTheme.typography.bodyMedium,
-                maxLines = 2
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis   // ⭐ Adds ...
             )
 
             // Product price
