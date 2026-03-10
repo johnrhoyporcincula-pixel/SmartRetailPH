@@ -1,5 +1,19 @@
 package com.example.smartretailph.ui.reports
 
+import com.example.smartretailph.ui.dashboard.OverviewCard
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material.icons.filled.SsidChart
+import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CardDefaults
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,10 +53,18 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.Color
 
 enum class ReportPeriod {
     TODAY, WEEK, MONTH, YEAR
 }
+
+data class ReportsMetric(
+    val title: String,
+    val value: String,
+    val icon: ImageVector,
+    val background: Color
+)
 
 @Composable
 fun ReportsScreen(
@@ -88,13 +110,63 @@ fun ReportsScreen(
 
         // Summary metrics
         item {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Text("Summary", style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Total revenue: \$${"%.2f".format(state.totalRevenue)}", style = MaterialTheme.typography.bodyMedium)
-                    Text("Total orders: ${state.totalOrders}", style = MaterialTheme.typography.bodySmall)
-                    Text("Total products: ${state.totalProducts}", style = MaterialTheme.typography.bodySmall)
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+
+                Text(
+                    text = "Reports & Analytics",
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                // Row 1
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+
+                    OverviewCard(
+                        title = "Total Revenue",
+                        value = "₱${"%.2f".format(state.totalRevenue)}",
+                        icon = Icons.Default.SsidChart,
+                        background = Color(0xFFD1FAE5),
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    OverviewCard(
+                        title = "Orders",
+                        value = state.totalOrders.toString(),
+                        icon = Icons.Default.ReceiptLong,
+                        background = Color(0xFFDCEAFE),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                // Row 2
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+
+                    OverviewCard(
+                        title = "Items Sold",
+                        value = state.totalProducts.toString(),
+                        icon = Icons.Default.Inventory2,
+                        background = Color(0xFFEDE9FE),
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    OverviewCard(
+                        title = "Avg Order",
+                        value = if (state.totalOrders > 0)
+                            "₱${"%.2f".format(state.totalRevenue / state.totalOrders)}"
+                        else "₱0.00",
+                        icon = Icons.Default.AttachMoney,
+                        background = Color(0xFFFEF3C7),
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }
@@ -119,10 +191,16 @@ fun ReportsScreen(
                     // Use a red-tinted container for alerts
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text("⚠️ Stock Replenishment Needed", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "⚠️ Stock Replenishment Needed",
+                            style = MaterialTheme.typography.titleMedium
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
                         state.lowStockItems.forEach { (name, qty) ->
-                            Text("$name: $qty units remaining", style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                "$name: $qty units remaining",
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
                     }
                 }
@@ -143,7 +221,9 @@ fun ReportsScreen(
             }
         } else {
             item {
-                Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                Card(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)) {
                     Text(
                         "No category sales data available",
                         modifier = Modifier.padding(16.dp),
@@ -158,7 +238,9 @@ fun ReportsScreen(
             item {
                 Text("Sales by Day", style = MaterialTheme.typography.titleMedium)
             }
-            items(state.salesByDay.entries.sortedByDescending { it.key }.take(14).toList()) { entry ->
+            items(
+                state.salesByDay.entries.sortedByDescending { it.key }.take(14).toList()
+            ) { entry ->
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Row(
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -167,7 +249,10 @@ fun ReportsScreen(
                             .padding(12.dp)
                     ) {
                         Text(entry.key, style = MaterialTheme.typography.bodyMedium)
-                        Text("\$${"%.2f".format(entry.value)}", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "\$${"%.2f".format(entry.value)}",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                 }
             }
@@ -199,7 +284,10 @@ fun ReportsScreen(
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text("Forecast (Next Day)", style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("\$${"%.2f".format(state.forecastNextDay)}", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        "\$${"%.2f".format(state.forecastNextDay)}",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
                     Text("Based on 7-day average", style = MaterialTheme.typography.bodySmall)
                 }
             }
