@@ -47,6 +47,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.times
@@ -96,13 +97,12 @@ fun DashboardScreen(
     )
 
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
 
         item {
-
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -204,7 +204,6 @@ fun DashboardScreen(
         }
 
         item {
-
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -225,9 +224,6 @@ fun DashboardScreen(
                 }
             }
         }
-
-        item { Spacer(modifier = Modifier.height(12.dp)) }
-        item { Spacer(modifier = Modifier.height(28.dp)) }
 
         // Recent Activity
         item {
@@ -277,6 +273,7 @@ fun OverviewCard(
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(6.dp),
         colors = CardDefaults.cardColors(
             containerColor = background
         )
@@ -324,10 +321,9 @@ fun ActivityCard(
 ) {
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 10.dp),
-        shape = RoundedCornerShape(14.dp)
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        elevation = CardDefaults.cardElevation(6.dp)
     ) {
 
         Row(
@@ -370,6 +366,7 @@ fun GradientActionCard(
     Card(
         modifier = modifier.height(110.dp),
         shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(6.dp),
         onClick = onClick
     ) {
 

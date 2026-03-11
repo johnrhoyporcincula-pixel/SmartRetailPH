@@ -1,5 +1,10 @@
 package com.example.smartretailph.ui.main
 
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -27,7 +32,7 @@ enum class MainTab(
     val route: String,
     val title: String
 ) {
-    DASHBOARD(MainRoutes.DASHBOARD, "Dashboard"),
+    DASHBOARD(MainRoutes.DASHBOARD, "Home"),
     INVENTORY(MainRoutes.INVENTORY, "Inventory"),
     ORDERS(MainRoutes.ORDERS, "Orders"),
     REPORTS(MainRoutes.REPORTS, "Reports")
@@ -189,61 +194,101 @@ fun MainScaffold(
 
             topBar = {
 
-                CenterAlignedTopAppBar(
+                Surface(
+                    tonalElevation = 2.dp,
+                    shadowElevation = 6.dp,   // stronger but still soft shadow
+                    color = Color.White
+                ) {
 
-                    title = {
-                        Text(
-                            currentTopBarTitle,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    },
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(72.dp)   // increased height
+                            .padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
 
-                    navigationIcon = {
-
+                        // MENU
                         IconButton(
                             onClick = {
                                 scope.launch {
-                                    if (drawerState.isClosed) {
-                                        drawerState.open()
-                                    } else {
-                                        drawerState.close()
-                                    }
+                                    if (drawerState.isClosed) drawerState.open()
+                                    else drawerState.close()
                                 }
                             }
                         ) {
                             Icon(
                                 Icons.Default.Menu,
                                 contentDescription = "Menu",
-                                tint = MaterialTheme.colorScheme.onPrimary
+                                tint = Color(0xFF111827),
+                                modifier = Modifier.size(26.dp) // bigger icon
                             )
                         }
-                    },
 
-                    actions = {
+                        // TITLE
+                        Text(
+                            text = currentTopBarTitle,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = Color(0xFF111827)
+                        )
 
-                        IconButton(onClick = { showNotifications = true }) {
+                        // SEARCH
+                        IconButton(onClick = { }) {
                             Icon(
-                                Icons.Default.Notifications,
-                                contentDescription = "Notifications",
-                                tint = MaterialTheme.colorScheme.onPrimary
+                                Icons.Default.Search,
+                                contentDescription = "Search",
+                                tint = Color(0xFF111827),
+                                modifier = Modifier.size(26.dp)
                             )
                         }
-                    },
 
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                )
+                        // NOTIFICATIONS
+                        Box {
+
+                            IconButton(onClick = { showNotifications = true }) {
+                                Icon(
+                                    Icons.Default.Notifications,
+                                    contentDescription = "Notifications",
+                                    tint = Color(0xFF111827),
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .background(Color.Red, CircleShape)
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = (-6).dp, y = 6.dp)
+                            )
+                        }
+                    }
+                }
             },
 
             bottomBar = {
 
-                NavigationBar {
+                NavigationBar(
+                    containerColor = Color(0xFFF5F5F5),
+                    tonalElevation = 8.dp
+                ) {
 
                     mainTabs.forEach { tab ->
 
+                        val selected = currentRoute == tab.route
+
+                        val icon = when (tab) {
+                            MainTab.DASHBOARD -> Icons.Default.Home
+                            MainTab.INVENTORY -> Icons.Default.Inventory2
+                            MainTab.ORDERS -> Icons.Default.ShoppingCart
+                            MainTab.REPORTS -> Icons.Default.BarChart
+                        }
+
                         NavigationBarItem(
-                            selected = currentRoute == tab.route,
+                            selected = selected,
 
                             onClick = {
 
@@ -261,17 +306,32 @@ fun MainScaffold(
 
                             icon = {
 
-                                val icon = when (tab) {
-                                    MainTab.DASHBOARD -> Icons.Default.Dashboard
-                                    MainTab.INVENTORY -> Icons.Default.Inventory2
-                                    MainTab.ORDERS -> Icons.Default.ReceiptLong
-                                    MainTab.REPORTS -> Icons.Default.SsidChart
-                                }
-
-                                Icon(icon, contentDescription = tab.title)
+                                Icon(
+                                    icon,
+                                    contentDescription = tab.title,
+                                    tint = if (selected)
+                                        Color(0xFF2563EB)  // Blue active
+                                    else
+                                        Color(0xFF9CA3AF)  // Gray inactive
+                                )
                             },
 
-                            label = { Text(tab.title) }
+                            label = {
+
+                                Text(
+                                    tab.title,
+                                    color = if (selected)
+                                        Color(0xFF2563EB)
+                                    else
+                                        Color(0xFF9CA3AF)
+                                )
+                            },
+
+                            alwaysShowLabel = true,
+
+                            colors = NavigationBarItemDefaults.colors(
+                                indicatorColor = Color.Transparent
+                            )
                         )
                     }
                 }
