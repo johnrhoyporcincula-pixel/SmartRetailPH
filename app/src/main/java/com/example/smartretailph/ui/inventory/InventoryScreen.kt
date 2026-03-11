@@ -56,6 +56,9 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.ui.draw.scale
 
 @Composable
@@ -65,9 +68,16 @@ fun InventoryScreen(
     val products by inventoryViewModel.products.collectAsState()
     var selectedCategory by remember { mutableStateOf<String?>(null) }
     var searchQuery by remember { mutableStateOf("") }
+    var showFilterDialog by remember { mutableStateOf(false) }
+
+    var sortOption by remember { mutableStateOf("NameAsc") }
+
+    var showInStockOnly by remember { mutableStateOf(false) }
+    var showLowStockOnly by remember { mutableStateOf(false) }
 
     // Filter products by category
-    val filteredProducts = products.filter { product ->
+    var filteredProducts = products.filter { product ->
+
         val matchesCategory =
             selectedCategory == null || product.category == selectedCategory
 
@@ -76,7 +86,28 @@ fun InventoryScreen(
                     product.name.contains(searchQuery, ignoreCase = true) ||
                     product.sku.contains(searchQuery, ignoreCase = true)
 
-        matchesCategory && matchesSearch
+        val matchesStock =
+            (!showInStockOnly || product.stockQuantity > 0) &&
+                    (!showLowStockOnly || product.stockQuantity in 1..5)
+
+        matchesCategory && matchesSearch && matchesStock
+    }
+
+    filteredProducts = when (sortOption) {
+
+        "NameAsc" -> filteredProducts.sortedBy { it.name }
+
+        "NameDesc" -> filteredProducts.sortedByDescending { it.name }
+
+        "PriceAsc" -> filteredProducts.sortedBy { it.price }
+
+        "PriceDesc" -> filteredProducts.sortedByDescending { it.price }
+
+        "StockAsc" -> filteredProducts.sortedBy { it.stockQuantity }
+
+        "StockDesc" -> filteredProducts.sortedByDescending { it.stockQuantity }
+
+        else -> filteredProducts
     }
 
     // Get unique categories
@@ -94,40 +125,69 @@ fun InventoryScreen(
             .padding(16.dp)
     ) {
 
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
+        Row(
             modifier = Modifier
-                .fillMaxWidth(),
-            placeholder = { Text("Search products…") },
-            singleLine = true
-        )
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
 
-        // Category filter chips
-        if (categories.isNotEmpty()) {
-            Text("Filter by Category", style = MaterialTheme.typography.titleSmall)
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier.weight(1f),
+                placeholder = { Text("Search products...") },
+                singleLine = true,
+                shape = MaterialTheme.shapes.large
+            )
+
+            Card(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
+                    .size(54.dp)
+                    .clickable { showFilterDialog = true },
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             ) {
-                item {
-                    FilterChip(
-                        selected = selectedCategory == null,
-                        onClick = { selectedCategory = null },
-                        label = { Text("All") }
-                    )
-                }
-                items(categories) { cat ->
-                    FilterChip(
-                        selected = selectedCategory == cat,
-                        onClick = { selectedCategory = cat },
-                        label = { Text(cat) }
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Sort,
+                        contentDescription = "Sort & Filter"
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        /// Category selector (Figma style)
+        if (categories.isNotEmpty()) {
+
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 10.dp)
+            ) {
+
+                item {
+                    CategoryChip(
+                        text = "All Products",
+                        selected = selectedCategory == null,
+                        onClick = { selectedCategory = null }
+                    )
+                }
+
+                items(categories) { cat ->
+                    CategoryChip(
+                        text = cat,
+                        selected = selectedCategory == cat,
+                        onClick = { selectedCategory = cat }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
         }
 
         if (filteredProducts.isEmpty()) {
@@ -160,6 +220,81 @@ fun InventoryScreen(
                 }
             }
         }
+    }
+
+    // FILTER DIALOG
+    if (showFilterDialog) {
+
+        AlertDialog(
+            onDismissRequest = { showFilterDialog = false },
+            title = { Text("Sort & Filter") },
+
+            text = {
+
+                Column {
+
+                    Text(
+                        "Sort By",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    FilterChip(
+                        selected = sortOption == "NameAsc",
+                        onClick = { sortOption = "NameAsc" },
+                        label = { Text("Name (A → Z)") }
+                    )
+
+                    FilterChip(
+                        selected = sortOption == "NameDesc",
+                        onClick = { sortOption = "NameDesc" },
+                        label = { Text("Name (Z → A)") }
+                    )
+
+                    FilterChip(
+                        selected = sortOption == "PriceAsc",
+                        onClick = { sortOption = "PriceAsc" },
+                        label = { Text("Price (Low → High)") }
+                    )
+
+                    FilterChip(
+                        selected = sortOption == "PriceDesc",
+                        onClick = { sortOption = "PriceDesc" },
+                        label = { Text("Price (High → Low)") }
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        "Stock Filters",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    FilterChip(
+                        selected = showInStockOnly,
+                        onClick = { showInStockOnly = !showInStockOnly },
+                        label = { Text("In Stock Only") }
+                    )
+
+                    FilterChip(
+                        selected = showLowStockOnly,
+                        onClick = { showLowStockOnly = !showLowStockOnly },
+                        label = { Text("Low Stock") }
+                    )
+                }
+            },
+
+            confirmButton = {
+                TextButton(
+                    onClick = { showFilterDialog = false }
+                ) {
+                    Text("Apply")
+                }
+            }
+        )
     }
 
     if (sellProduct != null) {
@@ -452,5 +587,38 @@ fun ProductCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+fun CategoryChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+
+    val backgroundColor =
+        if (selected) Color(0xFF2F6BFF)
+        else Color(0xFFF1F3F5)
+
+    val textColor =
+        if (selected) Color.White
+        else Color.DarkGray
+
+    Box(
+        modifier = Modifier
+            .background(
+                color = backgroundColor,
+                shape = MaterialTheme.shapes.large
+            )
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = textColor,
+            style = MaterialTheme.typography.bodyMedium
+        )
     }
 }

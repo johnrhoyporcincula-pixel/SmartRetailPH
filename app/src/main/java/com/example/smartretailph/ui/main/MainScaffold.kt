@@ -1,5 +1,6 @@
 package com.example.smartretailph.ui.main
 
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Home
@@ -8,6 +9,7 @@ import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -15,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -22,7 +25,7 @@ import androidx.navigation.compose.*
 import com.example.smartretailph.ui.dashboard.DashboardScreen
 import com.example.smartretailph.ui.inventory.InventoryScreen
 import com.example.smartretailph.ui.navigation.MainRoutes
-import com.example.smartretailph.ui.notifications.NotificationsBottomSheet
+import com.example.smartretailph.ui.notifications.NotificationsOverlay
 import com.example.smartretailph.ui.orders.OrdersScreen
 import com.example.smartretailph.ui.reports.ReportsScreen
 import kotlinx.coroutines.launch
@@ -80,112 +83,176 @@ fun MainScaffold(
 
             ModalDrawerSheet {
 
-                // HEADER
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.primary)
-                        .padding(20.dp)
+                        .fillMaxHeight()
+                        .padding(bottom = 16.dp)
                 ) {
 
-                    Text(
-                        text = "Juan Dela Cruz",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
+                    /*
+                    -------------------------
+                    HEADER (BLUE PROFILE)
+                    -------------------------
+                    */
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color(0xFF2563EB),
+                                        Color(0xFF1D4ED8)
+                                    )
+                                )
+                            )
+                            .padding(20.dp)
+                    ) {
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+
+                            Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .background(Color.White.copy(alpha = 0.2f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.Person,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Column {
+
+                                Text(
+                                    text = "Alex Thompson",
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+
+                                Text(
+                                    text = "alex@retailbase.com",
+                                    color = Color.White.copy(alpha = 0.8f),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+
+                                Spacer(modifier = Modifier.height(6.dp))
+
+                                Surface(
+                                    color = Color.White.copy(alpha = 0.2f),
+                                    shape = RoundedCornerShape(50)
+                                ) {
+                                    Text(
+                                        "Store Manager",
+                                        color = Color.White,
+                                        modifier = Modifier.padding(
+                                            horizontal = 10.dp,
+                                            vertical = 4.dp
+                                        ),
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    /*
+                    -------------------------
+                    ACCOUNT SECTION
+                    -------------------------
+                    */
 
                     Text(
-                        text = "Store Manager",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        "ACCOUNT",
+                        modifier = Modifier.padding(start = 20.dp, bottom = 8.dp),
+                        color = Color.Gray
                     )
-                }
 
-                Text(
-                    text = "Main Menu",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(16.dp)
-                )
+                    DrawerItem(Icons.Default.Person, "Profile Settings")
 
-                // ACCOUNT SECTION
-                Text(
-                    text = "Account",
-                    style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
-                )
+                    DrawerItem(
+                        icon = Icons.Default.Notifications,
+                        title = "Notifications",
+                        badge = "3"
+                    )
 
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Person, contentDescription = null) },
-                    label = { Text("Profile Settings") },
-                    selected = false,
-                    onClick = {}
-                )
+                    DrawerItem(Icons.Default.Settings, "Preferences")
 
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Notifications, contentDescription = null) },
-                    label = { Text("Notifications") },
-                    selected = false,
-                    onClick = {}
-                )
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Tune, contentDescription = null) },
-                    label = { Text("Preferences") },
-                    selected = false,
-                    onClick = {}
-                )
+                    /*
+                    -------------------------
+                    APP SECTION
+                    -------------------------
+                    */
 
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    Text(
+                        "APP",
+                        modifier = Modifier.padding(start = 20.dp, bottom = 8.dp),
+                        color = Color.Gray
+                    )
 
-                // APP SECTION
-                Text(
-                    text = "App",
-                    style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
-                )
-
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Inventory2, contentDescription = null) },
-                    label = { Text("Inventory Management") },
-                    selected = false,
-                    onClick = {
+                    DrawerItem(Icons.Default.Inventory2, "Inventory Management") {
                         scope.launch { drawerState.close() }
                         navController.navigate(MainRoutes.INVENTORY_MANAGEMENT)
                     }
-                )
 
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Security, contentDescription = null) },
-                    label = { Text("Privacy & Security") },
-                    selected = false,
-                    onClick = {}
-                )
+                    DrawerItem(Icons.Default.Security, "Privacy & Security")
+                    DrawerItem(Icons.Default.Help, "Help & Support")
+                    DrawerItem(Icons.Default.Info, "About (v$versionName)")
 
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Help, contentDescription = null) },
-                    label = { Text("Help & Support") },
-                    selected = false,
-                    onClick = {}
-                )
+                    Spacer(modifier = Modifier.weight(1f))
 
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Info, contentDescription = null) },
-                    label = { Text("About (v$versionName)") },
-                    selected = false,
-                    onClick = {}
-                )
+                    /*
+                    -------------------------
+                    LOGOUT BUTTON
+                    -------------------------
+                    */
 
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFFFEBEE)
+                        ),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
 
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Logout, contentDescription = null) },
-                    label = { Text("Log Out") },
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        onLogout()
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    scope.launch { drawerState.close() }
+                                    onLogout()
+                                }
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+
+                            Icon(
+                                Icons.Default.Logout,
+                                contentDescription = null,
+                                tint = Color.Red
+                            )
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Text(
+                                "Log Out",
+                                color = Color.Red,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
                     }
-                )
+                }
             }
         }
     ) {
@@ -384,23 +451,62 @@ fun MainScaffold(
                 }
 
                 if (showNotifications) {
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.35f))
-                            .clickable { showNotifications = false }
+                    NotificationsOverlay(
+                        onDismiss = { showNotifications = false }
                     )
+                }
+            }
+        }
+    }
+}
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.BottomCenter)
-                    ) {
-                        NotificationsBottomSheet(
-                            onDismiss = { showNotifications = false }
-                        )
-                    }
+@Composable
+fun DrawerItem(
+    icon: ImageVector,
+    title: String,
+    badge: String? = null,
+    onClick: () -> Unit = {}
+) {
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFF3F4F6)
+        )
+    ) {
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            Icon(icon, contentDescription = null)
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Text(
+                text = title,
+                modifier = Modifier.weight(1f)
+            )
+
+            if (badge != null) {
+
+                Box(
+                    modifier = Modifier
+                        .background(Color.Red, CircleShape)
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        badge,
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelSmall
+                    )
                 }
             }
         }
