@@ -131,44 +131,101 @@ object OrdersRepository {
     }
 
     private fun populateSampleOrders() {
-        val customerNames = listOf("Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Henry", "Iris", "Jack", "Walk-in")
-        val paymentMethods = listOf("Cash", "Card")
+
+        val customerNames = listOf(
+            "Walk-in", "Juan Dela Cruz", "Maria Santos", "Pedro Reyes",
+            "Ana Lopez", "Carlo Garcia", "Mark Bautista", "Jenny Cruz",
+            "Aling Nena", "Mang Tony"
+        )
+
+        val paymentMethods = listOf("Cash", "GCash", "Card")
+
+        val statuses = listOf(
+            "Completed", "Completed", "Completed", "Completed", // most orders completed
+            "Processing",
+            "Pending"
+        )
+
         val now = System.currentTimeMillis()
-        val dayInMillis = 24 * 60 * 60 * 1000L
+        val dayMillis = 24 * 60 * 60 * 1000L
 
-        // Create orders for the last 100 days
-        for (day in 0..99) {
+        val products = listOf(
+            Triple("piattos", "Piattos Cheese", 12.0),
+            Triple("nova", "Nova Multigrain Chips", 12.0),
+            Triple("skyflakes", "Skyflakes Crackers", 8.0),
+            Triple("creamO", "Cream-O Cookies", 10.0),
+            Triple("pancitCanton", "Lucky Me Pancit Canton", 15.0),
+            Triple("beefNoodles", "Lucky Me Beef Noodles", 14.0),
+            Triple("sardines555", "555 Sardines", 22.0),
+            Triple("centuryTuna", "Century Tuna", 35.0),
+            Triple("nescafe", "Nescafe 3-in-1", 12.0),
+            Triple("kopiko", "Kopiko Brown Coffee", 12.0),
+            Triple("milo", "Milo Sachet", 10.0),
+            Triple("coke", "Coca Cola 290ml", 15.0),
+            Triple("sprite", "Sprite 290ml", 15.0),
+            Triple("zesto", "Zesto Juice", 12.0),
+            Triple("cloud9", "Cloud 9 Chocolate", 10.0),
+            Triple("hany", "Hany Chocolate", 5.0),
+            Triple("magicSarap", "Magic Sarap", 2.0),
+            Triple("soySauce", "Datu Puti Soy Sauce", 3.0),
+            Triple("surf", "Surf Detergent Sachet", 8.0),
+            Triple("joy", "Joy Dishwashing", 5.0)
+        )
+
+        for (day in 0 until 100) {
+
             val daysAgo = 99 - day
-            val orderTime = now - (daysAgo * dayInMillis)
-            val orderCount = (1..4).random() // 1-4 orders per day
+            val baseTime = now - (daysAgo * dayMillis)
 
-            repeat(orderCount) {
+            val ordersToday = (3..12).random() // sari store busy day
+
+            repeat(ordersToday) {
+
                 val customer = customerNames.random()
                 val payment = paymentMethods.random()
-                val itemCount = (1..3).random()
+                val status = statuses.random()
+
+                val itemCount = (1..5).random()
+
                 val items = mutableListOf<com.example.smartretailph.data.models.OrderItem>()
 
-                // Assign random products to items
-                val productIds = listOf("prod-iphone", "prod-samsung", "prod-sony", "prod-logitech", "prod-hp", "prod-notebook", "prod-pen")
-                val productNames = listOf("iPhone 14", "Galaxy S23", "Sony Headphones", "Logitech MX3", "HP Envy 13", "Notebook", "Pen")
-                val productPrices = listOf(799.99, 749.99, 349.99, 99.99, 999.99, 2.99, 0.99)
-
                 repeat(itemCount) {
-                    val idx = productIds.indices.random()
+
+                    val product = products.random()
+
+                    val quantity = when (product.first) {
+                        "magicSarap", "soySauce" -> (2..5).random()
+                        else -> (1..3).random()
+                    }
+
                     items.add(
                         com.example.smartretailph.data.models.OrderItem(
-                            productId = productIds[idx],
-                            name = productNames[idx],
-                            quantity = (1..5).random(),
-                            unitPrice = productPrices[idx]
+                            productId = product.first,
+                            name = product.second,
+                            quantity = quantity,
+                            unitPrice = product.third
                         )
                     )
                 }
 
-                val amount = items.sumOf { it.unitPrice * it.quantity }
-                addOrder(customer, amount, items, payment, orderTime + (Math.random() * dayInMillis).toLong())
+                val total = items.sumOf { it.quantity * it.unitPrice }
+
+                val order = Order(
+                    id = UUID.randomUUID().toString(),
+                    customerName = customer,
+                    totalAmount = total,
+                    items = items,
+                    paymentMethod = payment,
+                    status = status,
+                    createdAtMillis = baseTime + (Math.random() * dayMillis).toLong()
+                )
+
+                val updated = _orders.value + order
+                _orders.value = updated
             }
         }
+
+        persist(_orders.value)
     }
 }
 
