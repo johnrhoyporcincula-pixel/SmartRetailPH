@@ -1,14 +1,16 @@
 package com.example.smartretailph.data.repositories
 
 import android.content.Context
-import android.content.SharedPreferences
-import androidx.core.content.edit
+import com.example.smartretailph.data.database.AppDatabase
+import com.example.smartretailph.data.dao.ProductDao
+import com.example.smartretailph.data.entities.ProductEntity
 import com.example.smartretailph.data.models.Product
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import org.json.JSONArray
-import org.json.JSONObject
 import java.util.UUID
 
 /**
@@ -17,10 +19,7 @@ import java.util.UUID
  */
 object InventoryRepository {
 
-    private const val PREFS_NAME = "inventory_prefs"
-    private const val KEY_PRODUCTS = "products"
-
-    private lateinit var prefs: SharedPreferences
+    private lateinit var productDao: ProductDao
 
     private val _products = MutableStateFlow<List<Product>>(emptyList())
     val products: StateFlow<List<Product>> = _products.asStateFlow()
@@ -29,12 +28,21 @@ object InventoryRepository {
 
     fun init(context: Context) {
         if (isInitialized) return
-        prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        loadFromStorage()
-        // populate sample data when empty (helpful for testing/demo)
-        if (_products.value.isEmpty()) {
-            populateSampleProducts()
+        val db = AppDatabase.getInstance(context.applicationContext)
+        productDao = db.productDao()
+
+        // Load existing data from Room and populate sample data if needed
+        runBlocking {
+            withContext(Dispatchers.IO) {
+                val entities = productDao.getAll()
+                _products.value = entities.map { it.toModel() }
+
+                if (_products.value.isEmpty()) {
+                    populateSampleProducts()
+                }
+            }
         }
+
         isInitialized = true
     }
 
@@ -53,62 +61,38 @@ object InventoryRepository {
             category = category.trim(),
             price = price
         )
+        runBlocking {
+            withContext(Dispatchers.IO) {
+                productDao.insert(product.toEntity())
+            }
+        }
+
         val updated = _products.value + product
         _products.value = updated
-        persist(updated)
     }
 
     fun updateProduct(updatedProduct: Product) {
+        runBlocking {
+            withContext(Dispatchers.IO) {
+                productDao.update(updatedProduct.toEntity())
+            }
+        }
+
         val updated = _products.value.map { product ->
             if (product.id == updatedProduct.id) updatedProduct else product
         }
         _products.value = updated
-        persist(updated)
     }
 
     fun deleteProduct(id: String) {
+        runBlocking {
+            withContext(Dispatchers.IO) {
+                productDao.deleteById(id)
+            }
+        }
+
         val updated = _products.value.filterNot { it.id == id }
         _products.value = updated
-        persist(updated)
-    }
-
-    private fun loadFromStorage() {
-        val json = prefs.getString(KEY_PRODUCTS, null) ?: return
-        runCatching {
-            val array = JSONArray(json)
-            val list = mutableListOf<Product>()
-            for (i in 0 until array.length()) {
-                val obj = array.getJSONObject(i)
-                list.add(
-                    Product(
-                        id = obj.getString("id"),
-                        name = obj.getString("name"),
-                        sku = obj.getString("sku"),
-                        stockQuantity = obj.getInt("stockQuantity"),
-                        category = obj.optString("category", ""),
-                        price = obj.getDouble("price")
-                    )
-                )
-            }
-            _products.value = list
-        }
-    }
-
-    private fun persist(products: List<Product>) {
-        val array = JSONArray()
-        products.forEach { product ->
-            val obj = JSONObject()
-            obj.put("id", product.id)
-            obj.put("name", product.name)
-            obj.put("sku", product.sku)
-            obj.put("stockQuantity", product.stockQuantity)
-            obj.put("category", product.category)
-            obj.put("price", product.price)
-            array.put(obj)
-        }
-        prefs.edit {
-            putString(KEY_PRODUCTS, array.toString())
-        }
     }
 
     private fun populateSampleProducts() {
@@ -241,5 +225,25 @@ object InventoryRepository {
         addProduct("Mineral Water 1L", "MSC-099", 40, 20.0, "Beverages")
         addProduct("Plastic Bag Small", "MSC-100", 200, 1.0, "Store Supplies")
     }
+
+    private fun Product.toEntity(): ProductEntity =
+        ProductEntity(
+            id = id,
+            name = name,
+            sku = sku,
+            stockQuantity = stockQuantity,
+            category = category,
+            price = price
+        )
+
+    private fun ProductEntity.toModel(): Product =
+        Product(
+            id = id,
+            name = name,
+            sku = sku,
+            stockQuantity = stockQuantity,
+            category = category,
+            price = price
+        )
 }
 

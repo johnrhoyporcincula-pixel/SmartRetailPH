@@ -1,26 +1,26 @@
 package com.example.smartretailph.data.repositories
 
 import android.content.Context
-import android.content.SharedPreferences
-import androidx.core.content.edit
+import com.example.smartretailph.data.database.AppDatabase
+import com.example.smartretailph.data.dao.OrderDao
+import com.example.smartretailph.data.entities.OrderEntity
+import com.example.smartretailph.data.entities.OrderItemEntity
 import com.example.smartretailph.data.models.Order
 import com.example.smartretailph.data.models.OrderItem
 import com.example.smartretailph.data.models.OrderStatus
 import com.example.smartretailph.data.models.PaymentMethod
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import org.json.JSONArray
-import org.json.JSONObject
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import java.util.UUID
 
 object OrdersRepository {
     private var orderCounter = 1
 
-    private const val PREFS_NAME = "orders_prefs"
-    private const val KEY_ORDERS = "orders"
-
-    private lateinit var prefs: SharedPreferences
+    private lateinit var orderDao: OrderDao
 
     private val _orders = MutableStateFlow<List<Order>>(emptyList())
     val orders: StateFlow<List<Order>> = _orders.asStateFlow()
@@ -30,13 +30,37 @@ object OrdersRepository {
     fun init(context: Context) {
         if (isInitialized) return
 
-        prefs = context.applicationContext
-            .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val db = AppDatabase.getInstance(context.applicationContext)
+        orderDao = db.orderDao()
 
-        loadFromStorage()
+        // Load existing orders from Room and seed sample data if needed
+        runBlocking {
+            withContext(Dispatchers.IO) {
+                val fromDb = orderDao.getAllOrdersWithItems()
+                val list = fromDb.map { rel ->
+                    Order(
+                        id = rel.order.id,
+                        customerName = rel.order.customerName,
+                        totalAmount = rel.order.totalAmount,
+                        items = rel.items.map {
+                            OrderItem(
+                                productId = it.productId,
+                                name = it.name,
+                                quantity = it.quantity,
+                                unitPrice = it.unitPrice
+                            )
+                        },
+                        paymentMethod = rel.order.paymentMethod,
+                        status = rel.order.status,
+                        createdAtMillis = rel.order.createdAtMillis
+                    )
+                }
+                _orders.value = list
 
-        if (_orders.value.isEmpty()) {
-            populateSampleOrders()
+                if (_orders.value.isEmpty()) {
+                    populateSampleOrders()
+                }
+            }
         }
 
         isInitialized = true
@@ -68,128 +92,51 @@ object OrdersRepository {
             createdAtMillis = createdAtMillis
         )
 
+        // Persist to Room on IO thread but keep this API synchronous
+        runBlocking {
+            withContext(Dispatchers.IO) {
+                orderDao.insertOrder(
+                    OrderEntity(
+                        id = order.id,
+                        customerName = order.customerName,
+                        totalAmount = order.totalAmount,
+                        paymentMethod = order.paymentMethod,
+                        status = order.status,
+                        createdAtMillis = order.createdAtMillis
+                    )
+                )
+
+                if (order.items.isNotEmpty()) {
+                    val itemEntities = order.items.map {
+                        OrderItemEntity(
+                            orderId = order.id,
+                            productId = it.productId,
+                            name = it.name,
+                            quantity = it.quantity,
+                            unitPrice = it.unitPrice
+                        )
+                    }
+                    orderDao.insertItems(itemEntities)
+                }
+            }
+        }
+
         val updated = _orders.value + order
         _orders.value = updated
-
-        persist(updated)
 
         return id
     }
 
     fun deleteOrder(id: String) {
+        runBlocking {
+            withContext(Dispatchers.IO) {
+                orderDao.deleteItemsForOrder(id)
+                orderDao.deleteOrderById(id)
+            }
+        }
+
         val updated = _orders.value.filterNot { it.id == id }
         _orders.value = updated
-        persist(updated)
-    }
-
-    private fun loadFromStorage() {
-
-        val json = prefs.getString(KEY_ORDERS, null) ?: return
-
-        runCatching {
-
-            val array = JSONArray(json)
-
-            val list = mutableListOf<Order>()
-
-            for (i in 0 until array.length()) {
-
-                val obj = array.getJSONObject(i)
-
-                list.add(
-                    Order(
-                        id = obj.getString("id"),
-                        customerName = obj.getString("customerName"),
-                        totalAmount = obj.optDouble("totalAmount", 0.0),
-
-                        items = runCatching {
-
-                            val itemsArray = obj.optJSONArray("items") ?: JSONArray()
-
-                            val tmp = mutableListOf<OrderItem>()
-
-                            for (j in 0 until itemsArray.length()) {
-
-                                val it = itemsArray.getJSONObject(j)
-
-                                tmp.add(
-                                    OrderItem(
-                                        productId = it.optString("productId"),
-                                        name = it.optString("name"),
-                                        quantity = it.optInt("quantity", 1),
-                                        unitPrice = it.optDouble("unitPrice", 0.0)
-                                    )
-                                )
-                            }
-
-                            tmp
-
-                        }.getOrElse { emptyList() },
-
-                        paymentMethod = runCatching {
-                            PaymentMethod.valueOf(
-                                obj.optString("paymentMethod", "Cash")
-                            )
-                        }.getOrDefault(PaymentMethod.Cash),
-
-                        status = runCatching {
-                            OrderStatus.valueOf(
-                                obj.optString("status", "Completed")
-                            )
-                        }.getOrDefault(OrderStatus.Completed),
-
-                        createdAtMillis = obj.optLong(
-                            "createdAtMillis",
-                            System.currentTimeMillis()
-                        )
-                    )
-                )
-            }
-
-            _orders.value = list
-        }
-    }
-
-    private fun persist(orders: List<Order>) {
-
-        val array = JSONArray()
-
-        orders.forEach { order ->
-
-            val obj = JSONObject()
-
-            obj.put("id", order.id)
-            obj.put("customerName", order.customerName)
-            obj.put("totalAmount", order.totalAmount)
-
-            // Save enums as string
-            obj.put("paymentMethod", order.paymentMethod.name)
-            obj.put("status", order.status.name)
-
-            obj.put("createdAtMillis", order.createdAtMillis)
-
-            val itemsArray = JSONArray()
-
-            order.items.forEach {
-
-                val itObj = JSONObject()
-
-                itObj.put("productId", it.productId)
-                itObj.put("name", it.name)
-                itObj.put("quantity", it.quantity)
-                itObj.put("unitPrice", it.unitPrice)
-
-                itemsArray.put(itObj)
-            }
-
-            obj.put("items", itemsArray)
-
-            array.put(obj)
-        }
-
-        prefs.edit {
-            putString(KEY_ORDERS, array.toString())
-        }
     }
 
     private fun populateSampleOrders() {
