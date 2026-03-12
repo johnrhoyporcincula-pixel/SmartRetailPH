@@ -1,12 +1,25 @@
 package com.example.smartretailph.data.models
 
+enum class OrderStatus {
+    Pending,
+    Processing,
+    Completed,
+    Cancelled
+}
+
+enum class PaymentMethod {
+    Cash,
+    Card,
+    GCash,
+    PayMaya
+}
+
 data class Order(
     val id: String,
     val customerName: String,
     val totalAmount: Double,
     val items: List<OrderItem> = emptyList(),
-    val paymentMethod: String = "Cash",
-    val status: String = "Completed", // ADD THIS
+    val paymentMethod: PaymentMethod = PaymentMethod.Cash,
+    val status: OrderStatus = OrderStatus.Completed,
     val createdAtMillis: Long
 )
-

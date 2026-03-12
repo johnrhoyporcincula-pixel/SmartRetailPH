@@ -1,5 +1,7 @@
 package com.example.smartretailph.ui.orders
 
+import androidx.compose.material.icons.automirrored.filled.Sort
+import com.example.smartretailph.data.models.OrderStatus
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,7 +30,9 @@ fun OrdersScreen(
     ordersViewModel: OrdersViewModel = viewModel()
 ) {
 
-    val orders by ordersViewModel.orders.collectAsState()
+    val orders by com.example.smartretailph.data.repositories.OrdersRepository
+        .orders
+        .collectAsState()
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
 
@@ -40,14 +44,14 @@ fun OrdersScreen(
 
     var selectedFilter by remember { mutableStateOf("All") }
 
-    val pending = orders.count { it.status == "Pending" }
-    val processing = orders.count { it.status == "Processing" }
-    val done = orders.count { it.status == "Completed" }
+    val pending = orders.count { it.status == OrderStatus.Pending }
+    val processing = orders.count { it.status == OrderStatus.Processing }
+    val done = orders.count { it.status == OrderStatus.Completed }
 
     val filteredOrders = when (selectedFilter) {
-        "Pending" -> orders.filter { it.status == "Pending" }
-        "Processing" -> orders.filter { it.status == "Processing" }
-        "Completed" -> orders.filter { it.status == "Completed" }
+        "Pending" -> orders.filter { it.status == OrderStatus.Pending }
+        "Processing" -> orders.filter { it.status == OrderStatus.Processing }
+        "Completed" -> orders.filter { it.status == OrderStatus.Completed }
         else -> orders
     }
 
@@ -132,7 +136,7 @@ fun OrdersScreen(
 
         LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
 
-            items(filteredOrders) { order ->
+            items(filteredOrders, key = { it.id }) { order ->
 
                 Card(
                     modifier = Modifier
@@ -244,13 +248,13 @@ fun FilterChipItem(
 }
 
 @Composable
-fun StatusPill(status: String) {
+fun StatusPill(status: OrderStatus) {
 
     val color = when (status) {
-        "Pending" -> Color(0xFFFFB74D)
-        "Processing" -> Color(0xFF9575CD)
-        "Completed" -> Color(0xFF81C784)
-        else -> Color.Gray
+        OrderStatus.Pending -> Color(0xFFFFB74D)
+        OrderStatus.Processing -> Color(0xFF9575CD)
+        OrderStatus.Completed -> Color(0xFF81C784)
+        OrderStatus.Cancelled -> Color.Red
     }
 
     Box(
@@ -258,7 +262,7 @@ fun StatusPill(status: String) {
             .background(color.copy(alpha = 0.2f), RoundedCornerShape(20.dp))
             .padding(horizontal = 12.dp, vertical = 4.dp)
     ) {
-        Text(status, color = color)
+        Text(status.name, color = color)
     }
 }
 

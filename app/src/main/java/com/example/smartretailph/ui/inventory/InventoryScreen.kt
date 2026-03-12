@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -22,14 +21,11 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -56,14 +52,14 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.ui.draw.scale
+import com.example.smartretailph.data.models.PaymentMethod
 
 @Composable
 fun InventoryScreen(
-    inventoryViewModel: InventoryViewModel = viewModel()
+    inventoryViewModel: InventoryViewModel = viewModel(),
+    ordersViewModel: OrdersViewModel = viewModel()
 ) {
     val products by inventoryViewModel.products.collectAsState()
     var selectedCategory by remember { mutableStateOf<String?>(null) }
@@ -116,7 +112,6 @@ fun InventoryScreen(
     // POS sell dialog state
     var sellProduct by remember { mutableStateOf<com.example.smartretailph.data.models.Product?>(null) }
 
-    val ordersViewModel: OrdersViewModel = viewModel()
     val cartViewModel: com.example.smartretailph.viewmodel.CartViewModel = viewModel()
 
     Column(
@@ -324,7 +319,11 @@ fun InventoryScreen(
     // Checkout dialog state
     var showCheckoutDialog by remember { mutableStateOf(false) }
     var checkoutCustomerName by remember { mutableStateOf("Walk-in") }
-    var checkoutPaymentMethod by remember { mutableStateOf("Cash") }
+
+    var checkoutPaymentMethod by remember {
+        mutableStateOf(PaymentMethod.Cash)
+    }
+
     var cashReceived by remember { mutableStateOf("") }   // ✅ ADDED
     var pendingCartItems by remember { mutableStateOf<List<com.example.smartretailph.data.models.OrderItem>>(emptyList()) }
     var pendingCartTotal by remember { mutableStateOf(0.0) }
@@ -390,7 +389,7 @@ fun InventoryScreen(
                         pendingCartItems = cartItems
                         pendingCartTotal = cartViewModel.totalAmount()
                         checkoutCustomerName = "Walk-in"
-                        checkoutPaymentMethod = "Cash"
+                        checkoutPaymentMethod = PaymentMethod.Cash
                         showCheckoutDialog = true
                     }
                 )
@@ -420,8 +419,8 @@ fun InventoryScreen(
                     ) {
 
                         FilterChip(
-                            selected = checkoutPaymentMethod == "Cash",
-                            onClick = { checkoutPaymentMethod = "Cash" },
+                            selected = checkoutPaymentMethod == PaymentMethod.Cash,
+                            onClick = { checkoutPaymentMethod = PaymentMethod.Cash },
                             label = {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text("💵")
@@ -432,8 +431,8 @@ fun InventoryScreen(
                         )
 
                         FilterChip(
-                            selected = checkoutPaymentMethod == "Card",
-                            onClick = { checkoutPaymentMethod = "Card" },
+                            selected = checkoutPaymentMethod == PaymentMethod.Card,
+                            onClick = { checkoutPaymentMethod = PaymentMethod.Card },
                             label = {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text("💳")
@@ -444,8 +443,8 @@ fun InventoryScreen(
                         )
 
                         FilterChip(
-                            selected = checkoutPaymentMethod == "GCash",
-                            onClick = { checkoutPaymentMethod = "GCash" },
+                            selected = checkoutPaymentMethod == PaymentMethod.GCash,
+                            onClick = { checkoutPaymentMethod = PaymentMethod.GCash },
                             label = {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text("💙")
@@ -456,8 +455,8 @@ fun InventoryScreen(
                         )
 
                         FilterChip(
-                            selected = checkoutPaymentMethod == "PayMaya",
-                            onClick = { checkoutPaymentMethod = "PayMaya" },
+                            selected = checkoutPaymentMethod == PaymentMethod.PayMaya,
+                            onClick = { checkoutPaymentMethod = PaymentMethod.PayMaya },
                             label = {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text("💚")
@@ -494,33 +493,62 @@ fun InventoryScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    // create order
+
+                    val customer =
+                        if (checkoutCustomerName.isBlank()) "Walk-in"
+                        else checkoutCustomerName
+
+                    // ✅ Add order
                     val orderId = ordersViewModel.addOrder(
-                        if (checkoutCustomerName.isBlank()) "Walk-in" else checkoutCustomerName,
+                        customer,
                         pendingCartTotal,
                         pendingCartItems,
                         checkoutPaymentMethod
                     )
+
+                    // ✅ Update inventory stock
                     val productMap = products.associateBy { it.id }
 
-                    pendingCartItems.forEach { ci ->
-                        val prod = productMap[ci.productId]
-                        if (prod != null) {
-                            val updated = prod.copy(stockQuantity = prod.stockQuantity - ci.quantity)
-                            inventoryViewModel.updateProduct(updated)
+                    pendingCartItems.forEach { cartItem ->
+                        val product = productMap[cartItem.productId]
+
+                        if (product != null) {
+                            val updatedProduct = product.copy(
+                                stockQuantity = product.stockQuantity - cartItem.quantity
+                            )
+
+                            inventoryViewModel.updateProduct(updatedProduct)
                         }
                     }
-                    // Generate and save receipt
-                    val createdOrder = com.example.smartretailph.data.repositories.OrdersRepository.orders.value.find { it.id == orderId }
+
+                    // ✅ Save receipt
+                    val createdOrder =
+                        com.example.smartretailph.data.repositories.OrdersRepository
+                            .orders
+                            .value
+                            .find { it.id == orderId }
+
                     if (createdOrder != null) {
-                        val receipt = com.example.smartretailph.util.ReceiptGenerator.generate(createdOrder)
-                        com.example.smartretailph.data.repositories.ReceiptsRepository.saveReceipt(orderId, receipt)
+
+                        val receipt =
+                            com.example.smartretailph.util.ReceiptGenerator
+                                .generate(createdOrder)
+
+                        com.example.smartretailph.data.repositories.ReceiptsRepository
+                            .saveReceipt(orderId, receipt)
                     }
+
+                    // ✅ Clear cart
                     cartViewModel.clear()
+
+                    // ✅ Reset dialog
                     showCheckoutDialog = false
                     checkoutCustomerName = "Walk-in"
                     cashReceived = ""
-                }) { Text("Confirm") }
+
+                }) {
+                    Text("Confirm")
+                }
             },
             dismissButton = {
                 TextButton(onClick = { showCheckoutDialog = false }) { Text("Cancel") }

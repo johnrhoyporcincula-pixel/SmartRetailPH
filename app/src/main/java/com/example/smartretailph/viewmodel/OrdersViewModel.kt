@@ -3,6 +3,7 @@ package com.example.smartretailph.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.smartretailph.data.models.Order
+import com.example.smartretailph.data.models.PaymentMethod
 import com.example.smartretailph.data.repositories.OrdersRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +23,7 @@ class OrdersViewModel : ViewModel() {
         customerName: String,
         totalAmount: Double,
         items: List<com.example.smartretailph.data.models.OrderItem> = emptyList(),
-        paymentMethod: String = "Cash"
+        paymentMethod: PaymentMethod
     ): String {
         // OrdersRepository.addOrder is synchronous and returns the new order id
         return OrdersRepository.addOrder(customerName, totalAmount, items, paymentMethod)

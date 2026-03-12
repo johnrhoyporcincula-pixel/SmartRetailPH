@@ -1,5 +1,12 @@
 package com.example.smartretailph.ui.pos
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,8 +19,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -63,10 +70,73 @@ fun CartBottomSheet(
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Button(onClick = { showCheckoutDialog = true }) { Text("Checkout") }
-                Text("Items: ${items.sumOf { it.quantity }}", style = MaterialTheme.typography.bodyMedium)
+
+            val totalItems = items.sumOf { it.quantity }
+            val totalPrice = items.sumOf { it.quantity * it.unitPrice }
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(70.dp)
+                    .clickable { showCheckoutDialog = true },
+                shape = MaterialTheme.shapes.extraLarge,
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFF118C5A) // green like the design
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+
+                        // Cart circle
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .background(
+                                    Color.White.copy(alpha = 0.2f),
+                                    shape = MaterialTheme.shapes.extraLarge
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ShoppingCart,
+                                contentDescription = "Checkout",
+                                tint = Color.White
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column {
+                            Text(
+                                "$totalItems items",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color.White.copy(alpha = 0.8f)
+                            )
+
+                            Text(
+                                "Checkout Now",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.White
+                            )
+                        }
+                    }
+
+                    Text(
+                        "₱${"%.2f".format(totalPrice)}",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White
+                    )
+                }
             }
+
             Spacer(modifier = Modifier.height(8.dp))
             TextButton(onClick = onClose) { Text("Close") }
         }
