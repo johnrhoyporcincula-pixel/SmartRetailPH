@@ -1,5 +1,6 @@
 package com.example.smartretailph.ui.reports
 
+import androidx.compose.foundation.layout.size
 import com.example.smartretailph.ui.dashboard.OverviewCard
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.ReceiptLong
@@ -46,6 +47,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.smartretailph.viewmodel.ReportsViewModel
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.platform.LocalContext
@@ -53,6 +55,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.compose.runtime.*
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 
 enum class ReportPeriod {
@@ -258,21 +261,93 @@ fun ReportsScreen(
             }
         }
 
-        // Top products
+        // Top selling products (Figma style)
         if (state.topProducts.isNotEmpty()) {
+
             item {
-                Text("Top Products", style = MaterialTheme.typography.titleMedium)
-            }
-            items(state.topProducts.take(5)) { (name, qty) ->
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp)
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(4.dp)
+                ) {
+
+                    Column(
+                        modifier = Modifier.padding(16.dp)
                     ) {
-                        Text(name, style = MaterialTheme.typography.bodyMedium)
-                        Text("Qty: $qty", style = MaterialTheme.typography.bodySmall)
+
+                        Text(
+                            text = "Top Selling Products",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        state.topProducts.take(5).forEachIndexed { index, product ->
+
+                            val name = product.first
+                            val qty = product.second
+
+                            val revenue = qty * 12 // simple demo calculation
+
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color(0xFFF5F7FB)
+                                )
+                            ) {
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+
+                                    // Rank badge
+                                    Box(
+                                        modifier = Modifier
+                                            .background(
+                                                Color(0xFF2F6BFF),
+                                                RoundedCornerShape(10.dp)
+                                            )
+                                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Text(
+                                            "${index + 1}",
+                                            color = Color.White
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.width(12.dp))
+
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+
+                                        Text(
+                                            name,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+
+                                        Text(
+                                            "$qty units sold",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.Gray
+                                        )
+                                    }
+
+                                    Text(
+                                        "₱${"%.2f".format(revenue)}",
+                                        color = Color(0xFF1B8E3E),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -299,20 +374,23 @@ fun ReportsScreen(
 private fun SalesOverviewGraph(
     salesByDay: Map<String, Double>
 ) {
+
     val last7 = salesByDay.entries.sortedBy { it.key }.takeLast(7)
 
     if (last7.isEmpty()) return
 
+    val labels = listOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun")
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(260.dp)
+            .height(260.dp),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
 
             Row(
@@ -329,10 +407,10 @@ private fun SalesOverviewGraph(
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
-                            modifier = Modifier
-                                .width(12.dp)
-                                .height(12.dp)
-                                .background(androidx.compose.ui.graphics.Color.Blue)
+                            Modifier
+                                .width(10.dp)
+                                .height(10.dp)
+                                .background(Color(0xFF3B82F6))
                         )
                         Spacer(Modifier.width(4.dp))
                         Text("Sales")
@@ -342,10 +420,10 @@ private fun SalesOverviewGraph(
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
-                            modifier = Modifier
-                                .width(12.dp)
-                                .height(12.dp)
-                                .background(androidx.compose.ui.graphics.Color.Green)
+                            Modifier
+                                .width(10.dp)
+                                .height(10.dp)
+                                .background(Color(0xFF10B981))
                         )
                         Spacer(Modifier.width(4.dp))
                         Text("Orders")
@@ -355,20 +433,35 @@ private fun SalesOverviewGraph(
 
             Spacer(Modifier.height(16.dp))
 
-            LineGraph(last7)
+            SalesLineChart(last7)
+
+            Spacer(Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                labels.forEach {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun LineGraph(data: List<Map.Entry<String, Double>>) {
+private fun SalesLineChart(data: List<Map.Entry<String, Double>>) {
 
     val maxValue = data.maxOf { it.value }
 
-    androidx.compose.foundation.Canvas(
+    Canvas(
         modifier = Modifier
             .fillMaxWidth()
-            .height(180.dp)
+            .height(170.dp)
     ) {
 
         val width = size.width
@@ -376,31 +469,46 @@ private fun LineGraph(data: List<Map.Entry<String, Double>>) {
 
         val stepX = width / (data.size - 1)
 
-        var previousX = 0f
-        var previousY = 0f
+        // grid lines
+        val gridLines = 4
+
+        repeat(gridLines) { i ->
+
+            val y = height / gridLines * i
+
+            drawLine(
+                color = Color(0xFFE5E7EB),
+                start = Offset(0f, y),
+                end = Offset(width, y),
+                strokeWidth = 2f
+            )
+        }
+
+        var previous = Offset.Zero
 
         data.forEachIndexed { index, entry ->
 
-            val x = index * stepX
+            val x = stepX * index
             val y = height - (entry.value / maxValue * height).toFloat()
 
-            drawCircle(
-                color = androidx.compose.ui.graphics.Color.Blue,
-                radius = 8f,
-                center = androidx.compose.ui.geometry.Offset(x, y)
-            )
+            val current = Offset(x, y)
 
             if (index > 0) {
                 drawLine(
-                    color = androidx.compose.ui.graphics.Color.Blue,
-                    start = androidx.compose.ui.geometry.Offset(previousX, previousY),
-                    end = androidx.compose.ui.geometry.Offset(x, y),
+                    color = Color(0xFF3B82F6),
+                    start = previous,
+                    end = current,
                     strokeWidth = 4f
                 )
             }
 
-            previousX = x
-            previousY = y
+            drawCircle(
+                color = Color(0xFF3B82F6),
+                radius = 6f,
+                center = current
+            )
+
+            previous = current
         }
     }
 }
@@ -471,7 +579,7 @@ private fun SalesByCategoryChart(
 
                     categoryData.entries.forEachIndexed { index, entry ->
 
-                        val percent = (entry.value / total) * 100
+                        val percent = if (total > 0) (entry.value / total) * 100 else 0.0
 
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -501,15 +609,14 @@ private fun SalesByCategoryChart(
 @Composable
 private fun CategoryPieChart(
     categoryData: Map<String, Double>,
-    colors: List<androidx.compose.ui.graphics.Color>
+    colors: List<Color>
 ) {
 
     val total = categoryData.values.sum()
 
-    androidx.compose.foundation.Canvas(
+    Canvas(
         modifier = Modifier
-            .width(150.dp)
-            .height(150.dp)
+            .size(150.dp)
     ) {
 
         var startAngle = -90f
@@ -522,7 +629,10 @@ private fun CategoryPieChart(
                 color = colors[index % colors.size],
                 startAngle = startAngle,
                 sweepAngle = sweep,
-                useCenter = true
+                useCenter = false,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(
+                    width = 40f
+                )
             )
 
             startAngle += sweep

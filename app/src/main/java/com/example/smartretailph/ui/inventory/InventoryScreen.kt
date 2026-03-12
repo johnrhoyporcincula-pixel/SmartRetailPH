@@ -415,10 +415,6 @@ fun InventoryScreen(
 
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    Text("Payment Method", style = MaterialTheme.typography.bodyMedium)
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -505,9 +501,10 @@ fun InventoryScreen(
                         pendingCartItems,
                         checkoutPaymentMethod
                     )
-                    // Deduct stock
+                    val productMap = products.associateBy { it.id }
+
                     pendingCartItems.forEach { ci ->
-                        val prod = products.find { it.id == ci.productId }
+                        val prod = productMap[ci.productId]
                         if (prod != null) {
                             val updated = prod.copy(stockQuantity = prod.stockQuantity - ci.quantity)
                             inventoryViewModel.updateProduct(updated)
