@@ -3,6 +3,9 @@ package com.example.smartretailph.data.repositories
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Base64
+import com.example.smartretailph.data.local.AppDatabase
+import com.example.smartretailph.data.local.dao.UserDao
+import com.example.smartretailph.data.local.entities.UserEntity
 import com.example.smartretailph.data.models.User
 import com.example.smartretailph.utils.Result
 import kotlinx.coroutines.flow.Flow
@@ -33,6 +36,9 @@ class LocalAuthRepository(
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
+    private val userDao: UserDao =
+        AppDatabase.getInstance(context.applicationContext).userDao()
+
     private val _currentUser = MutableStateFlow<User?>(null)
     override val currentUser: Flow<User?> = _currentUser.asStateFlow()
 
@@ -51,21 +57,17 @@ class LocalAuthRepository(
             return Result.Error("Email and password must not be empty")
         }
 
-        val userKeyPrefix = userKeyPrefix(normalizedEmail)
-        val storedSalt = prefs.getString("${userKeyPrefix}_salt", null)
-        val storedHash = prefs.getString("${userKeyPrefix}_hash", null)
-        val storedUid = prefs.getString("${userKeyPrefix}_uid", null)
-
-        if (storedSalt == null || storedHash == null || storedUid == null) {
+        val entity = userDao.findByEmail(normalizedEmail)
+        if (entity == null) {
             return Result.Error("Account not found")
         }
 
-        val computedHash = hashPassword(password, storedSalt)
-        if (computedHash != storedHash) {
+        val computedHash = hashPassword(password, entity.passwordSalt)
+        if (computedHash != entity.passwordHash) {
             return Result.Error("Incorrect password")
         }
 
-        val user = User(uid = storedUid, email = normalizedEmail)
+        val user = User(uid = entity.id, email = normalizedEmail, displayName = entity.displayName)
         setCurrentUser(user)
         return Result.Success(user)
     }
@@ -76,8 +78,8 @@ class LocalAuthRepository(
             return Result.Error("Invalid email or password too short")
         }
 
-        val userKeyPrefix = userKeyPrefix(normalizedEmail)
-        if (prefs.contains("${userKeyPrefix}_hash")) {
+        val existing = userDao.findByEmail(normalizedEmail)
+        if (existing != null) {
             return Result.Error("Account already exists")
         }
 
@@ -85,11 +87,15 @@ class LocalAuthRepository(
         val hash = hashPassword(password, salt)
         val uid = UUID.randomUUID().toString()
 
-        prefs.edit()
-            .putString("${userKeyPrefix}_salt", salt)
-            .putString("${userKeyPrefix}_hash", hash)
-            .putString("${userKeyPrefix}_uid", uid)
-            .apply()
+        userDao.insert(
+            UserEntity(
+                id = uid,
+                email = normalizedEmail,
+                displayName = null,
+                passwordSalt = salt,
+                passwordHash = hash
+            )
+        )
 
         val user = User(uid = uid, email = normalizedEmail)
         setCurrentUser(user)
@@ -110,14 +116,6 @@ class LocalAuthRepository(
             .putString(KEY_CURRENT_UID, user.uid)
             .apply()
         _currentUser.value = user
-    }
-
-    private fun userKeyPrefix(email: String): String {
-        // Avoid raw email as key; hash it for a stable key
-        val digest = MessageDigest.getInstance("SHA-256")
-        val bytes = digest.digest(email.toByteArray())
-        val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
-        return "user_$base64"
     }
 
     private fun generateSalt(): String {

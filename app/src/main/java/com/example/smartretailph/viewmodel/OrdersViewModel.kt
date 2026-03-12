@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 class OrdersViewModel : ViewModel() {
 
@@ -24,9 +25,11 @@ class OrdersViewModel : ViewModel() {
         totalAmount: Double,
         items: List<com.example.smartretailph.data.models.OrderItem> = emptyList(),
         paymentMethod: PaymentMethod
-    ): String {
-        // OrdersRepository.addOrder is synchronous and returns the new order id
-        return OrdersRepository.addOrder(customerName, totalAmount, items, paymentMethod)
+    ): Order {
+        // Delegate to Room-backed repository
+        return runBlocking {
+            OrdersRepository.addOrder(customerName, totalAmount, items, paymentMethod)
+        }
     }
 
     fun deleteOrder(id: String) {
@@ -35,4 +38,3 @@ class OrdersViewModel : ViewModel() {
         }
     }
 }
-

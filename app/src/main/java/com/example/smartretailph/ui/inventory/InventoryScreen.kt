@@ -1,5 +1,7 @@
 package com.example.smartretailph.ui.inventory
 
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
@@ -499,7 +501,7 @@ fun InventoryScreen(
                         else checkoutCustomerName
 
                     // ✅ Add order
-                    val orderId = ordersViewModel.addOrder(
+                    val createdOrder = ordersViewModel.addOrder(
                         customer,
                         pendingCartTotal,
                         pendingCartItems,
@@ -522,20 +524,13 @@ fun InventoryScreen(
                     }
 
                     // ✅ Save receipt
-                    val createdOrder =
-                        com.example.smartretailph.data.repositories.OrdersRepository
-                            .orders
-                            .value
-                            .find { it.id == orderId }
+                    val receipt =
+                        com.example.smartretailph.util.ReceiptGenerator
+                            .generate(createdOrder)
 
-                    if (createdOrder != null) {
-
-                        val receipt =
-                            com.example.smartretailph.util.ReceiptGenerator
-                                .generate(createdOrder)
-
+                    kotlinx.coroutines.GlobalScope.launch {
                         com.example.smartretailph.data.repositories.ReceiptsRepository
-                            .saveReceipt(orderId, receipt)
+                            .saveReceipt(createdOrder.id, receipt)
                     }
 
                     // ✅ Clear cart

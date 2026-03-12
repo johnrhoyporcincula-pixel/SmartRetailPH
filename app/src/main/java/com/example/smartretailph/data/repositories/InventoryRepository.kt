@@ -1,21 +1,20 @@
 package com.example.smartretailph.data.repositories
 
 import android.content.Context
-import com.example.smartretailph.data.database.AppDatabase
-import com.example.smartretailph.data.dao.ProductDao
-import com.example.smartretailph.data.entities.ProductEntity
+import com.example.smartretailph.data.local.AppDatabase
+import com.example.smartretailph.data.local.dao.ProductDao
 import com.example.smartretailph.data.models.Product
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 /**
- * Simple local inventory repository backed by SharedPreferences.
- * Stores products as a JSON array string.
+ * Inventory repository backed by Room.
  */
 object InventoryRepository {
 
@@ -24,29 +23,32 @@ object InventoryRepository {
     private val _products = MutableStateFlow<List<Product>>(emptyList())
     val products: StateFlow<List<Product>> = _products.asStateFlow()
 
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     private var isInitialized = false
 
     fun init(context: Context) {
         if (isInitialized) return
+
         val db = AppDatabase.getInstance(context.applicationContext)
         productDao = db.productDao()
 
-        // Load existing data from Room and populate sample data if needed
-        runBlocking {
-            withContext(Dispatchers.IO) {
-                val entities = productDao.getAll()
-                _products.value = entities.map { it.toModel() }
+        scope.launch {
+            productDao.observeProducts().collect { list ->
+                _products.value = list
+            }
+        }
 
-                if (_products.value.isEmpty()) {
-                    populateSampleProducts()
-                }
+        scope.launch {
+            if (productDao.countProducts() == 0) {
+                populateSampleProducts()
             }
         }
 
         isInitialized = true
     }
 
-    fun addProduct(
+    suspend fun addProduct(
         name: String,
         sku: String,
         stockQuantity: Int,
@@ -61,41 +63,18 @@ object InventoryRepository {
             category = category.trim(),
             price = price
         )
-        runBlocking {
-            withContext(Dispatchers.IO) {
-                productDao.insert(product.toEntity())
-            }
-        }
-
-        val updated = _products.value + product
-        _products.value = updated
+        productDao.upsert(product)
     }
 
-    fun updateProduct(updatedProduct: Product) {
-        runBlocking {
-            withContext(Dispatchers.IO) {
-                productDao.update(updatedProduct.toEntity())
-            }
-        }
-
-        val updated = _products.value.map { product ->
-            if (product.id == updatedProduct.id) updatedProduct else product
-        }
-        _products.value = updated
+    suspend fun updateProduct(updatedProduct: Product) {
+        productDao.upsert(updatedProduct)
     }
 
-    fun deleteProduct(id: String) {
-        runBlocking {
-            withContext(Dispatchers.IO) {
-                productDao.deleteById(id)
-            }
-        }
-
-        val updated = _products.value.filterNot { it.id == id }
-        _products.value = updated
+    suspend fun deleteProduct(id: String) {
+        productDao.deleteById(id)
     }
 
-    private fun populateSampleProducts() {
+    private suspend fun populateSampleProducts() {
 
         // Snacks
         addProduct("Piattos Cheese", "SNK-001", 50, 12.0, "Snacks")
@@ -225,25 +204,5 @@ object InventoryRepository {
         addProduct("Mineral Water 1L", "MSC-099", 40, 20.0, "Beverages")
         addProduct("Plastic Bag Small", "MSC-100", 200, 1.0, "Store Supplies")
     }
-
-    private fun Product.toEntity(): ProductEntity =
-        ProductEntity(
-            id = id,
-            name = name,
-            sku = sku,
-            stockQuantity = stockQuantity,
-            category = category,
-            price = price
-        )
-
-    private fun ProductEntity.toModel(): Product =
-        Product(
-            id = id,
-            name = name,
-            sku = sku,
-            stockQuantity = stockQuantity,
-            category = category,
-            price = price
-        )
 }
 

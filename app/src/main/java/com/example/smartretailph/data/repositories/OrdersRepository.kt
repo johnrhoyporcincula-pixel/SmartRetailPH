@@ -1,20 +1,22 @@
 package com.example.smartretailph.data.repositories
 
 import android.content.Context
-import com.example.smartretailph.data.database.AppDatabase
-import com.example.smartretailph.data.dao.OrderDao
-import com.example.smartretailph.data.entities.OrderEntity
-import com.example.smartretailph.data.entities.OrderItemEntity
+import com.example.smartretailph.data.local.AppDatabase
+import com.example.smartretailph.data.local.dao.OrderDao
+import com.example.smartretailph.data.local.entities.OrderEntity
+import com.example.smartretailph.data.local.entities.OrderItemEntity
+import com.example.smartretailph.data.local.entities.toDomain
 import com.example.smartretailph.data.models.Order
 import com.example.smartretailph.data.models.OrderItem
 import com.example.smartretailph.data.models.OrderStatus
 import com.example.smartretailph.data.models.PaymentMethod
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 object OrdersRepository {
@@ -25,6 +27,8 @@ object OrdersRepository {
     private val _orders = MutableStateFlow<List<Order>>(emptyList())
     val orders: StateFlow<List<Order>> = _orders.asStateFlow()
 
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     private var isInitialized = false
 
     fun init(context: Context) {
@@ -33,33 +37,15 @@ object OrdersRepository {
         val db = AppDatabase.getInstance(context.applicationContext)
         orderDao = db.orderDao()
 
-        // Load existing orders from Room and seed sample data if needed
-        runBlocking {
-            withContext(Dispatchers.IO) {
-                val fromDb = orderDao.getAllOrdersWithItems()
-                val list = fromDb.map { rel ->
-                    Order(
-                        id = rel.order.id,
-                        customerName = rel.order.customerName,
-                        totalAmount = rel.order.totalAmount,
-                        items = rel.items.map {
-                            OrderItem(
-                                productId = it.productId,
-                                name = it.name,
-                                quantity = it.quantity,
-                                unitPrice = it.unitPrice
-                            )
-                        },
-                        paymentMethod = rel.order.paymentMethod,
-                        status = rel.order.status,
-                        createdAtMillis = rel.order.createdAtMillis
-                    )
-                }
-                _orders.value = list
+        scope.launch {
+            orderDao.observeOrdersWithItems().collect { list ->
+                _orders.value = list.map { it.toDomain() }
+            }
+        }
 
-                if (_orders.value.isEmpty()) {
-                    populateSampleOrders()
-                }
+        scope.launch {
+            if (orderDao.countOrders() == 0) {
+                populateSampleOrders()
             }
         }
 
@@ -71,75 +57,58 @@ object OrdersRepository {
         return "ORD-" + number.toString().padStart(4, '0')
     }
 
-    fun addOrder(
+    suspend fun addOrder(
         customerName: String,
         totalAmount: Double,
         items: List<OrderItem> = emptyList(),
         paymentMethod: PaymentMethod = PaymentMethod.Cash,
         status: OrderStatus = OrderStatus.Completed,
         createdAtMillis: Long = System.currentTimeMillis()
-    ): String {
+    ): Order {
 
         val id = UUID.randomUUID().toString()
 
-        val order = Order(
+        val orderEntity = OrderEntity(
             id = id,
             customerName = customerName.trim(),
             totalAmount = totalAmount,
-            items = items,
             paymentMethod = paymentMethod,
             status = status,
             createdAtMillis = createdAtMillis
         )
 
-        // Persist to Room on IO thread but keep this API synchronous
-        runBlocking {
-            withContext(Dispatchers.IO) {
-                orderDao.insertOrder(
-                    OrderEntity(
-                        id = order.id,
-                        customerName = order.customerName,
-                        totalAmount = order.totalAmount,
-                        paymentMethod = order.paymentMethod,
-                        status = order.status,
-                        createdAtMillis = order.createdAtMillis
-                    )
-                )
-
-                if (order.items.isNotEmpty()) {
-                    val itemEntities = order.items.map {
-                        OrderItemEntity(
-                            orderId = order.id,
-                            productId = it.productId,
-                            name = it.name,
-                            quantity = it.quantity,
-                            unitPrice = it.unitPrice
-                        )
-                    }
-                    orderDao.insertItems(itemEntities)
-                }
-            }
+        val itemEntities = items.map {
+            OrderItemEntity(
+                orderId = id,
+                productId = it.productId,
+                name = it.name,
+                quantity = it.quantity,
+                unitPrice = it.unitPrice
+            )
         }
 
-        val updated = _orders.value + order
-        _orders.value = updated
-
-        return id
-    }
-
-    fun deleteOrder(id: String) {
-        runBlocking {
-            withContext(Dispatchers.IO) {
-                orderDao.deleteItemsForOrder(id)
-                orderDao.deleteOrderById(id)
-            }
+        orderDao.insertOrder(orderEntity)
+        if (itemEntities.isNotEmpty()) {
+            orderDao.insertItems(itemEntities)
         }
 
-        val updated = _orders.value.filterNot { it.id == id }
-        _orders.value = updated
+        return Order(
+            id = id,
+            customerName = orderEntity.customerName,
+            totalAmount = orderEntity.totalAmount,
+            items = items,
+            paymentMethod = orderEntity.paymentMethod,
+            status = orderEntity.status,
+            createdAtMillis = orderEntity.createdAtMillis
+        )
     }
 
-    private fun populateSampleOrders() {
+    suspend fun deleteOrder(id: String) {
+        orderDao.deleteItemsForOrder(id)
+        orderDao.deleteOrderById(id)
+    }
+
+    private suspend fun populateSampleOrders() {
 
         val customerNames = listOf(
             "Walk-in", "Juan Dela Cruz", "Maria Santos",
@@ -216,8 +185,7 @@ object OrdersRepository {
 
                 val total = items.sumOf { it.quantity * it.unitPrice }
 
-                val order = Order(
-                    id = OrdersRepository.generateOrderNumber(),
+                addOrder(
                     customerName = customer,
                     totalAmount = total,
                     items = items,
@@ -225,11 +193,7 @@ object OrdersRepository {
                     status = status,
                     createdAtMillis = baseTime + (Math.random() * dayMillis).toLong()
                 )
-
-                _orders.value = _orders.value + order
             }
         }
-
-        persist(_orders.value)
     }
 }
