@@ -19,3 +19,12 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Room: keep generated code + annotations used by reflection
+-keep class * extends androidx.room.RoomDatabase { *; }
+-keep class androidx.room.** { *; }
+-keepclassmembers class * {
+    @androidx.room.* <methods>;
+    @androidx.room.* <fields>;
+}
+-keepattributes *Annotation*

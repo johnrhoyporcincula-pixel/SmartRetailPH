@@ -1,5 +1,6 @@
 package com.example.smartretailph.ui.inventory
 
+import android.widget.Toast
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import androidx.compose.ui.text.style.TextOverflow
@@ -34,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +44,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -63,6 +66,8 @@ fun InventoryScreen(
     inventoryViewModel: InventoryViewModel = viewModel(),
     ordersViewModel: OrdersViewModel = viewModel()
 ) {
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val products by inventoryViewModel.products.collectAsState()
     var selectedCategory by remember { mutableStateOf<String?>(null) }
     var searchQuery by remember { mutableStateOf("") }
@@ -73,43 +78,46 @@ fun InventoryScreen(
     var showInStockOnly by remember { mutableStateOf(false) }
     var showLowStockOnly by remember { mutableStateOf(false) }
 
-    // Filter products by category
-    var filteredProducts = products.filter { product ->
+    val filteredProducts by remember(
+        products,
+        selectedCategory,
+        searchQuery,
+        showInStockOnly,
+        showLowStockOnly,
+        sortOption
+    ) {
+        derivedStateOf {
+            val base = products.filter { product ->
+                val matchesCategory =
+                    selectedCategory == null || product.category == selectedCategory
 
-        val matchesCategory =
-            selectedCategory == null || product.category == selectedCategory
+                val matchesSearch =
+                    searchQuery.isBlank() ||
+                            product.name.contains(searchQuery, ignoreCase = true) ||
+                            product.sku.contains(searchQuery, ignoreCase = true)
 
-        val matchesSearch =
-            searchQuery.isBlank() ||
-                    product.name.contains(searchQuery, ignoreCase = true) ||
-                    product.sku.contains(searchQuery, ignoreCase = true)
+                val matchesStock =
+                    (!showInStockOnly || product.stockQuantity > 0) &&
+                            (!showLowStockOnly || product.stockQuantity in 1..5)
 
-        val matchesStock =
-            (!showInStockOnly || product.stockQuantity > 0) &&
-                    (!showLowStockOnly || product.stockQuantity in 1..5)
+                matchesCategory && matchesSearch && matchesStock
+            }
 
-        matchesCategory && matchesSearch && matchesStock
+            when (sortOption) {
+                "NameAsc" -> base.sortedBy { it.name }
+                "NameDesc" -> base.sortedByDescending { it.name }
+                "PriceAsc" -> base.sortedBy { it.price }
+                "PriceDesc" -> base.sortedByDescending { it.price }
+                "StockAsc" -> base.sortedBy { it.stockQuantity }
+                "StockDesc" -> base.sortedByDescending { it.stockQuantity }
+                else -> base
+            }
+        }
     }
 
-    filteredProducts = when (sortOption) {
-
-        "NameAsc" -> filteredProducts.sortedBy { it.name }
-
-        "NameDesc" -> filteredProducts.sortedByDescending { it.name }
-
-        "PriceAsc" -> filteredProducts.sortedBy { it.price }
-
-        "PriceDesc" -> filteredProducts.sortedByDescending { it.price }
-
-        "StockAsc" -> filteredProducts.sortedBy { it.stockQuantity }
-
-        "StockDesc" -> filteredProducts.sortedByDescending { it.stockQuantity }
-
-        else -> filteredProducts
+    val categories by remember(products) {
+        derivedStateOf { products.map { it.category }.distinct().sorted() }
     }
-
-    // Get unique categories
-    val categories = products.map { it.category }.distinct().sorted()
 
     // POS sell dialog state
     var sellProduct by remember { mutableStateOf<com.example.smartretailph.data.models.Product?>(null) }
@@ -495,51 +503,61 @@ fun InventoryScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
+                    if (pendingCartItems.isEmpty()) {
+                        Toast.makeText(context, "Cart is empty", Toast.LENGTH_SHORT).show()
+                        return@TextButton
+                    }
+
+                    val cash = cashReceived.toDoubleOrNull() ?: 0.0
+                    if (checkoutPaymentMethod == PaymentMethod.Cash && cash < pendingCartTotal) {
+                        Toast.makeText(context, "Insufficient cash received", Toast.LENGTH_SHORT).show()
+                        return@TextButton
+                    }
 
                     val customer =
                         if (checkoutCustomerName.isBlank()) "Walk-in"
                         else checkoutCustomerName
 
-                    // ✅ Add order
-                    val createdOrder = ordersViewModel.addOrder(
-                        customer,
-                        pendingCartTotal,
-                        pendingCartItems,
-                        checkoutPaymentMethod
-                    )
+                    scope.launch {
+                        // ✅ Add order
+                        val createdOrder = ordersViewModel.addOrder(
+                            customer,
+                            pendingCartTotal,
+                            pendingCartItems,
+                            checkoutPaymentMethod
+                        )
 
-                    // ✅ Update inventory stock
-                    val productMap = products.associateBy { it.id }
+                        // ✅ Update inventory stock
+                        val productMap = products.associateBy { it.id }
 
-                    pendingCartItems.forEach { cartItem ->
-                        val product = productMap[cartItem.productId]
+                        pendingCartItems.forEach { cartItem ->
+                            val product = productMap[cartItem.productId]
 
-                        if (product != null) {
-                            val updatedProduct = product.copy(
-                                stockQuantity = product.stockQuantity - cartItem.quantity
-                            )
+                            if (product != null) {
+                                val updatedProduct = product.copy(
+                                    stockQuantity = product.stockQuantity - cartItem.quantity
+                                )
 
-                            inventoryViewModel.updateProduct(updatedProduct)
+                                inventoryViewModel.updateProduct(updatedProduct)
+                            }
                         }
-                    }
 
-                    // ✅ Save receipt
-                    val receipt =
-                        com.example.smartretailph.util.ReceiptGenerator
-                            .generate(createdOrder)
+                        // ✅ Save receipt
+                        val receipt =
+                            com.example.smartretailph.util.ReceiptGenerator
+                                .generate(createdOrder)
 
-                    kotlinx.coroutines.GlobalScope.launch {
                         com.example.smartretailph.data.repositories.ReceiptsRepository
                             .saveReceipt(createdOrder.id, receipt)
+
+                        // ✅ Clear cart
+                        cartViewModel.clear()
+
+                        // ✅ Reset dialog
+                        showCheckoutDialog = false
+                        checkoutCustomerName = "Walk-in"
+                        cashReceived = ""
                     }
-
-                    // ✅ Clear cart
-                    cartViewModel.clear()
-
-                    // ✅ Reset dialog
-                    showCheckoutDialog = false
-                    checkoutCustomerName = "Walk-in"
-                    cashReceived = ""
 
                 }) {
                     Text("Confirm")

@@ -134,7 +134,12 @@ fun OrdersScreen(
 
         // ================= ORDER LIST =================
 
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
 
             items(filteredOrders, key = { it.id }) { order ->
 

@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 class OrdersViewModel : ViewModel() {
 
@@ -20,16 +19,13 @@ class OrdersViewModel : ViewModel() {
             initialValue = emptyList()
         )
 
-    fun addOrder(
+    suspend fun addOrder(
         customerName: String,
         totalAmount: Double,
         items: List<com.example.smartretailph.data.models.OrderItem> = emptyList(),
         paymentMethod: PaymentMethod
     ): Order {
-        // Delegate to Room-backed repository
-        return runBlocking {
-            OrdersRepository.addOrder(customerName, totalAmount, items, paymentMethod)
-        }
+        return OrdersRepository.addOrder(customerName, totalAmount, items, paymentMethod)
     }
 
     fun deleteOrder(id: String) {

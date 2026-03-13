@@ -2,6 +2,8 @@ package com.example.smartretailph.data.local.entities
 
 import androidx.room.Embedded
 import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.Relation
 import com.example.smartretailph.data.models.Order
@@ -20,7 +22,18 @@ data class OrderEntity(
     val createdAtMillis: Long
 )
 
-@Entity(tableName = "order_items")
+@Entity(
+    tableName = "order_items",
+    foreignKeys = [
+        ForeignKey(
+            entity = OrderEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["orderId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index("orderId")]
+)
 data class OrderItemEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,

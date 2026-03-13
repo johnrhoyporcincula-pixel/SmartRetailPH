@@ -21,12 +21,19 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
+    }
+
+    lint {
+        // Work around a known lint crash in androidx.lifecycle lint with Kotlin 2.x analysis APIs.
+        // (Error observed during :app:lintVitalAnalyzeRelease)
+        disable += "NullSafeMutableLiveData"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -60,10 +67,7 @@ dependencies {
     // Coroutines
     implementation(libs.ktor.coroutines.core)
     implementation(libs.ktor.coroutines.android)
-    implementation(libs.androidx.compose.ui.text)
-    implementation(libs.androidx.ui)
     implementation(libs.androidx.compose.foundation)
-    implementation(libs.androidx.compose.ui.geometry)
 
     // Room persistence
     implementation(libs.androidx.room.runtime)
