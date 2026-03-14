@@ -157,13 +157,20 @@ fun OrdersScreen(
                                 Toast.makeText(context, "No receipt available", Toast.LENGTH_SHORT).show()
                             }
                         },
-                    elevation = CardDefaults.cardElevation(4.dp)
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.White
+                    ),
+                    elevation = CardDefaults.cardElevation(
+                        defaultElevation = 8.dp
+                    ),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
 
-                    Column(modifier = Modifier.padding(14.dp)) {
+                    Column(
+                        modifier = Modifier.padding(18.dp)
+                    ) {
 
                         // top row
-
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
@@ -186,7 +193,7 @@ fun OrdersScreen(
                             StatusPill(order.status)
                         }
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -221,19 +228,42 @@ fun OrderStatCard(
 
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(14.dp)
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(6.dp),
+        shape = RoundedCornerShape(16.dp)
     ) {
 
         Column(
-            modifier = Modifier
-                .background(color)
-                .padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.fillMaxWidth()
         ) {
 
-            Text(count.toString(), style = MaterialTheme.typography.titleLarge)
+            // top accent line
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .background(color)
+            )
 
-            Text(title, style = MaterialTheme.typography.bodySmall)
+            Column(
+                modifier = Modifier
+                    .padding(vertical = 14.dp, horizontal = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                Text(
+                    text = count.toString(),
+                    style = MaterialTheme.typography.headlineSmall
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
         }
     }
 }

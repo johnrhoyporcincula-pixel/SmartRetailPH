@@ -27,10 +27,74 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.smartretailph.viewmodel.InventoryViewModel
 
+enum class InventoryTab {
+    PRODUCTS,
+    CATEGORIES,
+    STOCKS
+}
+
 @Composable
 fun InventoryManagementScreen(
     inventoryViewModel: InventoryViewModel = viewModel()
 ) {
+
+    var selectedTab by remember { mutableStateOf(InventoryTab.STOCKS) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+
+        TabRow(selectedTabIndex = selectedTab.ordinal) {
+
+            Tab(
+                selected = selectedTab == InventoryTab.PRODUCTS,
+                onClick = { selectedTab = InventoryTab.PRODUCTS },
+                text = { Text("Products") }
+            )
+
+            Tab(
+                selected = selectedTab == InventoryTab.CATEGORIES,
+                onClick = { selectedTab = InventoryTab.CATEGORIES },
+                text = { Text("Categories") }
+            )
+
+            Tab(
+                selected = selectedTab == InventoryTab.STOCKS,
+                onClick = { selectedTab = InventoryTab.STOCKS },
+                text = { Text("Stocks") }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        when (selectedTab) {
+
+            InventoryTab.PRODUCTS ->
+                ProductManagementScreen(inventoryViewModel)
+
+            InventoryTab.CATEGORIES ->
+                CategoryManagementScreen()
+
+            InventoryTab.STOCKS ->
+                StockManagementScreen(inventoryViewModel)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun StockManagementScreen(
+    inventoryViewModel: InventoryViewModel
+) {
+    var selectedProduct by remember {
+        mutableStateOf<com.example.smartretailph.data.models.Product?>(null)
+    }
+
+    var showRestockSheet by remember {
+        mutableStateOf(false)
+    }
 
     val products by inventoryViewModel.products.collectAsState()
 
@@ -178,11 +242,102 @@ fun InventoryManagementScreen(
         ) {
 
             items(filteredProducts) { product ->
-
-                ProductItemCard(product)
-
+                StockAlertCard(
+                    product = product,
+                    onRestockClick = {
+                        selectedProduct = product
+                        showRestockSheet = true
+                    }
+                )
             }
         }
+    }
+
+    if (showRestockSheet && selectedProduct != null) {
+
+        ModalBottomSheet(
+            onDismissRequest = {
+                showRestockSheet = false
+            }
+        ) {
+
+            RestockBottomSheet(
+                product = selectedProduct!!,
+                onClose = {
+                    showRestockSheet = false
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun ProductManagementScreen(
+    inventoryViewModel: InventoryViewModel
+) {
+
+    val products by inventoryViewModel.products.collectAsState()
+
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+
+        items(products) { product ->
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(4.dp)
+            ) {
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+
+                        Text(
+                            text = product.name,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Text(
+                            text = "SKU: ${product.sku}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+
+                        Text(
+                            text = "Category: ${product.category}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+
+                    OutlinedButton(onClick = { }) {
+                        Text("Edit")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CategoryManagementScreen() {
+
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+
+        Text(
+            text = "Category Management (Coming Soon)",
+            style = MaterialTheme.typography.titleMedium
+        )
     }
 }
 
@@ -388,3 +543,297 @@ fun InventoryGradientCard(
         }
     }
 }
+
+@Composable
+fun StockAlertCard(
+    product: com.example.smartretailph.data.models.Product,
+    onRestockClick: () -> Unit
+) {
+
+    val threshold = 20
+    val isLowStock = product.stockQuantity < threshold
+
+    // if (!isLowStock) return
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFF9FAFB)
+        )
+    ) {
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+
+            /*
+            -------------------------
+            HEADER
+            -------------------------
+            */
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(
+                            Color(0xFFFFF4E5),
+                            RoundedCornerShape(12.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = Color(0xFFF97316)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+
+                    Text(
+                        text = product.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Text(
+                        text = "${product.sku} • ${product.category}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+
+                Surface(
+                    color = if (isLowStock) Color(0xFFFFEDD5) else Color(0xFFE5E7EB),
+                    shape = RoundedCornerShape(50)
+                ) {
+
+                    Text(
+                        text = if (isLowStock) "Low Stock" else "Normal",
+                        color = if (isLowStock) Color(0xFFF97316) else Color(0xFF6B7280),
+                        modifier = Modifier.padding(
+                            horizontal = 10.dp,
+                            vertical = 4.dp
+                        ),
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Divider()
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            /*
+            -------------------------
+            STOCK METRICS
+            -------------------------
+            */
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+
+                Column {
+                    Text(
+                        "Current",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.Gray
+                    )
+                    Text(
+                        product.stockQuantity.toString(),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Column {
+                    Text(
+                        "Threshold",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.Gray
+                    )
+                    Text(
+                        threshold.toString(),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Column {
+                    Text(
+                        "Priority",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.Gray
+                    )
+                    Text(
+                        "Medium",
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFF97316)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            /*
+            -------------------------
+            RESTOCK BUTTON
+            -------------------------
+            */
+
+            Button(
+                onClick = onRestockClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF2563EB)
+                )
+            ) {
+
+                Text("Restock Now")
+            }
+        }
+    }
+}
+
+@Composable
+fun RestockBottomSheet(
+    product: com.example.smartretailph.data.models.Product,
+    onClose: () -> Unit
+) {
+
+    var quantity by remember { mutableStateOf(1) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(20.dp)
+    ) {
+
+        Text(
+            text = "Restock Product",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Card(
+            shape = RoundedCornerShape(16.dp)
+        ) {
+
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+
+                Text(
+                    product.name,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    "${product.sku} • ${product.category}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+
+                    Column {
+                        Text("Current Stock", color = Color.Gray)
+                        Text(product.stockQuantity.toString(), fontWeight = FontWeight.Bold)
+                    }
+
+                    Column {
+                        Text("Unit Price", color = Color.Gray)
+                        Text("₱${product.price}", color = Color(0xFF16A34A))
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Text(
+            "Restock Quantity",
+            fontWeight = FontWeight.Medium
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+
+            IconButton(
+                onClick = {
+                    if (quantity > 1) quantity--
+                }
+            ) {
+                Text("-")
+            }
+
+            Text(
+                quantity.toString(),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+
+            IconButton(
+                onClick = { quantity++ }
+            ) {
+                Text("+")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+
+            OutlinedButton(
+                onClick = onClose,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Cancel")
+            }
+
+            Button(
+                onClick = { /* TODO update inventory */ },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF2563EB)
+                )
+            ) {
+                Text("Confirm Restock")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+    }
+}
+

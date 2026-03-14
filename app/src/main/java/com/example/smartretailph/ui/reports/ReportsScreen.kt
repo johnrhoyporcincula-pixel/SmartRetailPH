@@ -268,8 +268,11 @@ fun ReportsScreen(
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(4.dp)
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.White
+                    ),
+                    elevation = CardDefaults.cardElevation(6.dp)
                 ) {
 
                     Column(
@@ -281,7 +284,7 @@ fun ReportsScreen(
                             style = MaterialTheme.typography.titleMedium
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         state.topProducts.take(5).forEachIndexed { index, product ->
 
@@ -293,57 +296,60 @@ fun ReportsScreen(
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                shape = RoundedCornerShape(12.dp),
+                                    .padding(vertical = 6.dp),
+                                shape = RoundedCornerShape(14.dp),
                                 colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFFF5F7FB)
-                                )
+                                    containerColor = Color(0xFFF1F5F9)
+                                ),
+                                elevation = CardDefaults.cardElevation(0.dp)
                             ) {
 
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(12.dp),
+                                        .padding(horizontal = 14.dp, vertical = 12.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
 
-                                    // Rank badge
+                                    // Rank number square
                                     Box(
                                         modifier = Modifier
+                                            .size(34.dp)
                                             .background(
-                                                Color(0xFF2F6BFF),
-                                                RoundedCornerShape(10.dp)
-                                            )
-                                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                                                color = Color(0xFF2563EB),
+                                                shape = RoundedCornerShape(10.dp)
+                                            ),
+                                        contentAlignment = Alignment.Center
                                     ) {
                                         Text(
-                                            "${index + 1}",
-                                            color = Color.White
+                                            text = "${index + 1}",
+                                            color = Color.White,
+                                            style = MaterialTheme.typography.labelLarge
                                         )
                                     }
 
-                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Spacer(modifier = Modifier.width(14.dp))
 
                                     Column(
                                         modifier = Modifier.weight(1f)
                                     ) {
 
                                         Text(
-                                            name,
+                                            text = name,
                                             style = MaterialTheme.typography.bodyMedium
                                         )
 
                                         Text(
-                                            "$qty units sold",
+                                            text = "$qty units sold",
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = Color.Gray
+                                            color = Color(0xFF6B7280)
                                         )
                                     }
 
                                     Text(
-                                        "₱${"%.2f".format(revenue)}",
-                                        color = Color(0xFF1B8E3E),
-                                        style = MaterialTheme.typography.bodyMedium
+                                        text = "₱${"%.2f".format(revenue)}",
+                                        color = Color(0xFF059669),
+                                        style = MaterialTheme.typography.titleSmall
                                     )
                                 }
                             }
