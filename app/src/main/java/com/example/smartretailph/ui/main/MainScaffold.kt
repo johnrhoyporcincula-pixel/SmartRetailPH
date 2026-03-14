@@ -65,6 +65,13 @@ fun MainScaffold(
         MainRoutes.INVENTORY -> "Inventory"
         MainRoutes.ORDERS -> "Orders"
         MainRoutes.REPORTS -> "Reports"
+
+        MainRoutes.PROFILE -> "Profile"
+        MainRoutes.PREFERENCES -> "Preferences"
+        MainRoutes.SECURITY -> "Security"
+        MainRoutes.HELP -> "Help & Support"
+        MainRoutes.ABOUT -> "About"
+
         else -> "SmartRetailPH"
     }
 
@@ -175,15 +182,24 @@ fun MainScaffold(
                         color = Color.Gray
                     )
 
-                    DrawerItem(Icons.Default.Person, "Profile Settings")
+                    DrawerItem(Icons.Default.Person, "Profile Settings") {
+                        scope.launch { drawerState.close() }
+                        navController.navigate(MainRoutes.PROFILE)
+                    }
 
                     DrawerItem(
                         icon = Icons.Default.Notifications,
                         title = "Notifications",
                         badge = "3"
-                    )
+                    ) {
+                        scope.launch { drawerState.close() }
+                        showNotifications = true
+                    }
 
-                    DrawerItem(Icons.Default.Settings, "Preferences")
+                    DrawerItem(Icons.Default.Settings, "Preferences") {
+                        scope.launch { drawerState.close() }
+                        navController.navigate(MainRoutes.PREFERENCES)
+                    }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -204,9 +220,18 @@ fun MainScaffold(
                         navController.navigate(MainRoutes.INVENTORY_MANAGEMENT)
                     }
 
-                    DrawerItem(Icons.Default.Security, "Privacy & Security")
-                    DrawerItem(Icons.Default.Help, "Help & Support")
-                    DrawerItem(Icons.Default.Info, "About (v$versionName)")
+                    DrawerItem(Icons.Default.Security, "Privacy & Security") {
+                        scope.launch { drawerState.close() }
+                        navController.navigate(MainRoutes.SECURITY)
+                    }
+                    DrawerItem(Icons.Default.Help, "Help & Support") {
+                        scope.launch { drawerState.close() }
+                        navController.navigate(MainRoutes.HELP)
+                    }
+                    DrawerItem(Icons.Default.Info, "About (v$versionName)") {
+                        scope.launch { drawerState.close() }
+                        navController.navigate(MainRoutes.ABOUT)
+                    }
 
                     Spacer(modifier = Modifier.weight(1f))
 
@@ -447,6 +472,28 @@ fun MainScaffold(
 
                     composable(MainRoutes.INVENTORY_MANAGEMENT) {
                         InventoryManagementScreen()
+                    }
+
+                    // NEW DRAWER SCREENS
+
+                    composable(MainRoutes.PROFILE) {
+                        ProfileScreen()
+                    }
+
+                    composable(MainRoutes.PREFERENCES) {
+                        PreferencesScreen()
+                    }
+
+                    composable(MainRoutes.SECURITY) {
+                        SecurityScreen()
+                    }
+
+                    composable(MainRoutes.HELP) {
+                        HelpScreen()
+                    }
+
+                    composable(MainRoutes.ABOUT) {
+                        AboutScreen()
                     }
                 }
 
