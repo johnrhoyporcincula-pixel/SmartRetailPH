@@ -51,9 +51,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.platform.LocalContext
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import androidx.compose.runtime.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -76,6 +73,11 @@ fun ReportsScreen(
     val state by reportsViewModel.state.collectAsState()
     val context = LocalContext.current
     var selectedPeriod by remember { mutableStateOf(ReportPeriod.TODAY) }
+
+    // For now, period buttons are visual only; using full dataset keeps this screen stable.
+    val filteredSalesByDay = state.salesByDay
+    val periodRevenue = state.totalRevenue
+    val periodOrders = state.totalOrders
 
     LazyColumn(
         modifier = Modifier
@@ -132,7 +134,7 @@ fun ReportsScreen(
 
                     OverviewCard(
                         title = "Total Revenue",
-                        value = "₱${"%.2f".format(state.totalRevenue)}",
+                        value = "₱${"%.2f".format(periodRevenue)}",
                         icon = Icons.Default.SsidChart,
                         background = Color(0xFFD1FAE5),
                         modifier = Modifier.weight(1f)
@@ -140,7 +142,7 @@ fun ReportsScreen(
 
                     OverviewCard(
                         title = "Orders",
-                        value = state.totalOrders.toString(),
+                        value = periodOrders.toString(),
                         icon = Icons.Default.ReceiptLong,
                         background = Color(0xFFDCEAFE),
                         modifier = Modifier.weight(1f)
@@ -163,8 +165,8 @@ fun ReportsScreen(
 
                     OverviewCard(
                         title = "Avg Order",
-                        value = if (state.totalOrders > 0)
-                            "₱${"%.2f".format(state.totalRevenue / state.totalOrders)}"
+                        value = if (periodOrders > 0)
+                            "₱${"%.2f".format(periodRevenue / periodOrders)}"
                         else "₱0.00",
                         icon = Icons.Default.AttachMoney,
                         background = Color(0xFFFEF3C7),
@@ -177,7 +179,7 @@ fun ReportsScreen(
         // Export button
         item {
             Button(
-                onClick = { exportSalesCSV(context, state.salesByDay) },
+                onClick = { exportSalesCSV(context, filteredSalesByDay) },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(Icons.Default.FileDownload, contentDescription = "Export")
@@ -211,9 +213,9 @@ fun ReportsScreen(
         }
 
         // Sales overview graph
-        if (state.salesByDay.isNotEmpty()) {
+        if (filteredSalesByDay.isNotEmpty()) {
             item {
-                SalesOverviewGraph(state.salesByDay)
+                SalesOverviewGraph(filteredSalesByDay)
             }
         }
 
@@ -237,12 +239,12 @@ fun ReportsScreen(
         }
 
         // Sales by day list
-        if (state.salesByDay.isNotEmpty()) {
+        if (filteredSalesByDay.isNotEmpty()) {
             item {
                 Text("Sales by Day", style = MaterialTheme.typography.titleMedium)
             }
             items(
-                state.salesByDay.entries.sortedByDescending { it.key }.take(14).toList()
+                filteredSalesByDay.entries.sortedByDescending { it.key }.take(14).toList()
             ) { entry ->
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Row(

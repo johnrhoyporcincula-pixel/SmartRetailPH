@@ -30,6 +30,7 @@ import com.example.smartretailph.ui.orders.OrdersScreen
 import com.example.smartretailph.ui.reports.ReportsScreen
 import kotlinx.coroutines.launch
 import com.example.smartretailph.ui.inventory.InventoryManagementScreen
+import android.widget.Toast
 
 enum class MainTab(
     val route: String,
@@ -172,39 +173,6 @@ fun MainScaffold(
 
                     /*
                     -------------------------
-                    ACCOUNT SECTION
-                    -------------------------
-                    */
-
-                    Text(
-                        "ACCOUNT",
-                        modifier = Modifier.padding(start = 20.dp, bottom = 8.dp),
-                        color = Color.Gray
-                    )
-
-                    DrawerItem(Icons.Default.Person, "Profile Settings") {
-                        scope.launch { drawerState.close() }
-                        navController.navigate(MainRoutes.PROFILE)
-                    }
-
-                    DrawerItem(
-                        icon = Icons.Default.Notifications,
-                        title = "Notifications",
-                        badge = "3"
-                    ) {
-                        scope.launch { drawerState.close() }
-                        showNotifications = true
-                    }
-
-                    DrawerItem(Icons.Default.Settings, "Preferences") {
-                        scope.launch { drawerState.close() }
-                        navController.navigate(MainRoutes.PREFERENCES)
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    /*
-                    -------------------------
                     APP SECTION
                     -------------------------
                     */
@@ -234,12 +202,6 @@ fun MainScaffold(
                     }
 
                     Spacer(modifier = Modifier.weight(1f))
-
-                    /*
-                    -------------------------
-                    LOGOUT BUTTON
-                    -------------------------
-                    */
 
                     Card(
                         modifier = Modifier
@@ -271,7 +233,7 @@ fun MainScaffold(
                             Spacer(modifier = Modifier.width(12.dp))
 
                             Text(
-                                "Log Out",
+                                "Exit SmartRetailPH",
                                 color = Color.Red,
                                 style = MaterialTheme.typography.bodyLarge
                             )
@@ -328,7 +290,18 @@ fun MainScaffold(
                         )
 
                         // SEARCH
-                        IconButton(onClick = { }) {
+                        IconButton(onClick = {
+                            Toast
+                                .makeText(
+                                    context,
+                                    "Search coming soon. Showing inventory list.",
+                                    Toast.LENGTH_SHORT
+                                )
+                                .show()
+                            navController.navigate(MainRoutes.INVENTORY) {
+                                launchSingleTop = true
+                            }
+                        }) {
                             Icon(
                                 Icons.Default.Search,
                                 contentDescription = "Search",

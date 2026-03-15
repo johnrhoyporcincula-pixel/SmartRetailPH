@@ -13,9 +13,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 
 @Composable
 fun ProfileScreen() {
+
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -58,7 +62,15 @@ fun ProfileScreen() {
 
                 Spacer(Modifier.height(16.dp))
 
-                Button(onClick = { }) {
+                Button(onClick = {
+                    Toast
+                        .makeText(
+                            context,
+                            "Profile editing coming soon",
+                            Toast.LENGTH_SHORT
+                        )
+                        .show()
+                }) {
                     Icon(Icons.Default.Edit, null)
                     Spacer(Modifier.width(6.dp))
                     Text("Edit Profile")

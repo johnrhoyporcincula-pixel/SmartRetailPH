@@ -1,5 +1,12 @@
 package com.example.smartretailph.ui.dashboard
 
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -59,6 +66,7 @@ data class QuickAction(
     val action: () -> Unit
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     dashboardViewModel: DashboardViewModel = viewModel(),
@@ -69,6 +77,9 @@ fun DashboardScreen(
 ) {
     val state by dashboardViewModel.state.collectAsState()
 
+    var showReportsSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
+
     val quickActions = listOf(
         QuickAction(
             "Add Product",
@@ -77,7 +88,7 @@ fun DashboardScreen(
             onNavigateToInventory
         ),
         QuickAction(
-            "Scan Item",
+            "New Sale",
             Icons.Default.Inventory2,
             listOf(Color(0xFF9333EA), Color(0xFFC084FC)),
             onNavigateToInventory
@@ -92,7 +103,7 @@ fun DashboardScreen(
             "View Reports",
             Icons.Default.SsidChart,
             listOf(Color(0xFFF97316), Color(0xFFFB923C)),
-            onNavigateToReports
+            { showReportsSheet = true }
         )
     )
 
@@ -259,6 +270,23 @@ fun DashboardScreen(
             ActivityCard("Low Stock Alert", "White Bread", "6h ago")
         }
     }
+
+    if (showReportsSheet) {
+
+        ModalBottomSheet(
+            onDismissRequest = { showReportsSheet = false },
+            sheetState = sheetState
+        ) {
+
+            ReportsBottomSheet(
+                onGenerateReports = {
+                    showReportsSheet = false
+                    onNavigateToReports()
+                }
+            )
+
+        }
+    }
 }
 
 @Composable
@@ -396,6 +424,80 @@ fun GradientActionCard(
                     fontWeight = FontWeight.Bold
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun ReportsBottomSheet(
+    onGenerateReports: () -> Unit
+) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+
+        Text(
+            text = "Reports & Analytics",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+
+        Text(
+            text = "Date Range",
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Card(
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text(
+                text = "Last 7 Days",
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+
+            OverviewCard(
+                title = "Revenue",
+                value = "₱24.5K",
+                icon = Icons.Default.SsidChart,
+                background = Color(0xFFD1FAE5),
+                modifier = Modifier.weight(1f)
+            )
+
+            OverviewCard(
+                title = "Sales",
+                value = "892",
+                icon = Icons.Default.ReceiptLong,
+                background = Color(0xFFDCEAFE),
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Button(
+            onClick = onGenerateReports,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF2563EB)
+            )
+        ) {
+
+            Icon(
+                Icons.Default.Report,
+                contentDescription = null
+            )
+
+            Spacer(modifier = Modifier.size(8.dp))
+
+            Text("Generate Report")
         }
     }
 }

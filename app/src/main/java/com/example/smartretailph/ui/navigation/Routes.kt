@@ -1,10 +1,5 @@
 package com.example.smartretailph.ui.navigation
 
-object AuthRoutes {
-    const val LOGIN = "auth/login"
-    const val SIGN_UP = "auth/signup"
-}
-
 object MainRoutes {
     const val ROOT = "main/root"
 

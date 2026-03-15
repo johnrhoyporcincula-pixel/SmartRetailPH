@@ -12,6 +12,7 @@ import com.example.smartretailph.ui.main.MainScaffold
 import com.example.smartretailph.ui.theme.SmartRetailPHTheme
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -26,7 +27,8 @@ class MainActivity : ComponentActivity() {
                 Surface(color = MaterialTheme.colorScheme.background) {
                     MainScaffold(
                         onLogout = {
-                            // No authentication yet; placeholder for future logout behavior
+                            // No account system; this can later be repurposed
+                            // to confirm and close the app if desired.
                         }
                     )
                 }

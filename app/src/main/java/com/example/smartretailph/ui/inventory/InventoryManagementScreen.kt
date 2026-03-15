@@ -21,10 +21,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import android.widget.Toast
 import com.example.smartretailph.viewmodel.InventoryViewModel
 
 enum class InventoryTab {
@@ -96,7 +98,10 @@ fun StockManagementScreen(
         mutableStateOf(false)
     }
 
+    var showAddDialog by remember { mutableStateOf(false) }
+
     val products by inventoryViewModel.products.collectAsState()
+    val context = LocalContext.current
 
     var searchQuery by remember { mutableStateOf("") }
 
@@ -198,11 +203,22 @@ fun StockManagementScreen(
                 singleLine = true
             )
 
-            IconButton(onClick = { }) {
+            IconButton(onClick = {
+                // Basic UX feedback: clear search so the full list is visible again
+                searchQuery = ""
+            }) {
                 Icon(Icons.Default.Tune, "Filter")
             }
 
-            IconButton(onClick = { }) {
+            IconButton(onClick = {
+                Toast
+                    .makeText(
+                        context,
+                        "Category filters coming soon",
+                        Toast.LENGTH_SHORT
+                    )
+                    .show()
+            }) {
                 Icon(Icons.Default.LocalOffer, "Category")
             }
 
@@ -212,7 +228,7 @@ fun StockManagementScreen(
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                IconButton(onClick = { }) {
+                IconButton(onClick = { showAddDialog = true }) {
                     Icon(
                         Icons.Default.Add,
                         "Add Product",
@@ -263,11 +279,32 @@ fun StockManagementScreen(
 
             RestockBottomSheet(
                 product = selectedProduct!!,
+                inventoryViewModel = inventoryViewModel,
                 onClose = {
                     showRestockSheet = false
                 }
             )
         }
+    }
+
+    if (showAddDialog) {
+        AddOrEditProductDialog(
+            title = "Add Product",
+            initial = null,
+            onDismiss = { showAddDialog = false },
+            onConfirm = { name, sku, qty, price, category ->
+                if (name.isNotBlank() && sku.isNotBlank() && qty >= 0 && price >= 0.0) {
+                    inventoryViewModel.addProduct(
+                        name = name,
+                        sku = sku,
+                        quantity = qty,
+                        price = price,
+                        category = category
+                    )
+                }
+                showAddDialog = false
+            }
+        )
     }
 }
 
@@ -277,6 +314,10 @@ fun ProductManagementScreen(
 ) {
 
     val products by inventoryViewModel.products.collectAsState()
+
+    var editingProduct by remember {
+        mutableStateOf<com.example.smartretailph.data.models.Product?>(null)
+    }
 
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -317,27 +358,64 @@ fun ProductManagementScreen(
                         )
                     }
 
-                    OutlinedButton(onClick = { }) {
+                    OutlinedButton(onClick = { editingProduct = product }) {
                         Text("Edit")
                     }
                 }
             }
         }
     }
+
+    editingProduct?.let { product ->
+        AddOrEditProductDialog(
+            title = "Edit Product",
+            initial = product,
+            onDismiss = { editingProduct = null },
+            onConfirm = { name, sku, qty, price, category ->
+                inventoryViewModel.updateProduct(
+                    product.copy(
+                        name = name,
+                        sku = sku,
+                        stockQuantity = qty,
+                        price = price,
+                        category = category
+                    )
+                )
+                editingProduct = null
+            }
+        )
+    }
 }
 
 @Composable
-fun CategoryManagementScreen() {
+fun CategoryManagementScreen(
+    inventoryViewModel: InventoryViewModel = viewModel()
+) {
+    val products by inventoryViewModel.products.collectAsState()
+    val categories = products.groupBy { it.category.ifBlank { "Uncategorized" } }
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-
-        Text(
-            text = "Category Management (Coming Soon)",
-            style = MaterialTheme.typography.titleMedium
-        )
+        items(categories.entries.toList()) { entry ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(4.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = entry.key,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${entry.value.size} products",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -460,24 +538,24 @@ fun ProductItemCard(
             ) {
 
                 OutlinedButton(
-                    onClick = { },
+                    onClick = { /* Hook where used if needed */ },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Edit Details")
                 }
 
                 Button(
-                    onClick = { },
+                    onClick = { /* Hook where used if needed */ },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2563EB) // blue like image
+                        containerColor = Color(0xFF2563EB)
                     )
                 ) {
                     Text("Update Stock")
                 }
 
                 IconButton(
-                    onClick = { }
+                    onClick = { /* Hook where used if needed */ }
                 ) {
                     Icon(
                         Icons.Default.Close,
@@ -716,10 +794,12 @@ fun StockAlertCard(
 @Composable
 fun RestockBottomSheet(
     product: com.example.smartretailph.data.models.Product,
+    inventoryViewModel: InventoryViewModel,
     onClose: () -> Unit
 ) {
 
     var quantity by remember { mutableStateOf(1) }
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -823,7 +903,20 @@ fun RestockBottomSheet(
             }
 
             Button(
-                onClick = { /* TODO update inventory */ },
+                onClick = {
+                    if (quantity > 0) {
+                        val updated = product.copy(
+                            stockQuantity = product.stockQuantity + quantity
+                        )
+                        inventoryViewModel.updateProduct(updated)
+                        Toast.makeText(
+                            context,
+                            "Restocked ${product.name} by $quantity",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    onClose()
+                },
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF2563EB)
@@ -835,5 +928,84 @@ fun RestockBottomSheet(
 
         Spacer(modifier = Modifier.height(20.dp))
     }
+}
+
+@Composable
+private fun AddOrEditProductDialog(
+    title: String,
+    initial: com.example.smartretailph.data.models.Product?,
+    onDismiss: () -> Unit,
+    onConfirm: (name: String, sku: String, quantity: Int, price: Double, category: String) -> Unit
+) {
+    val context = LocalContext.current
+
+    var name by remember { mutableStateOf(initial?.name.orEmpty()) }
+    var sku by remember { mutableStateOf(initial?.sku.orEmpty()) }
+    var category by remember { mutableStateOf(initial?.category.orEmpty()) }
+    var quantityText by remember { mutableStateOf(initial?.stockQuantity?.toString().orEmpty()) }
+    var priceText by remember { mutableStateOf(initial?.price?.toString().orEmpty()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Name") },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = sku,
+                    onValueChange = { sku = it },
+                    label = { Text("SKU") },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = category,
+                    onValueChange = { category = it },
+                    label = { Text("Category") },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = quantityText,
+                    onValueChange = { quantityText = it.filter { ch -> ch.isDigit() } },
+                    label = { Text("Quantity") },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = priceText,
+                    onValueChange = { priceText = it.filter { ch -> ch.isDigit() || ch == '.' } },
+                    label = { Text("Price") },
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val quantity = quantityText.toIntOrNull()
+                    val price = priceText.toDoubleOrNull()
+                    if (name.isBlank() || sku.isBlank() || quantity == null || price == null) {
+                        Toast.makeText(
+                            context,
+                            "Please fill all fields with valid values",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return@TextButton
+                    }
+                    onConfirm(name, sku, quantity, price, category)
+                }
+            ) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
