@@ -1,5 +1,6 @@
 package com.example.smartretailph.data.repositories
 
+import android.R.attr.category
 import android.content.Context
 import com.example.smartretailph.data.local.AppDatabase
 import com.example.smartretailph.data.local.dao.ProductDao
@@ -11,6 +12,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
 import java.util.UUID
 
 /**
@@ -88,6 +91,33 @@ object InventoryRepository {
         price = price,
         category = category
     )
+
+    fun renameCategory(old: String, new: String) {
+        scope.launch {
+            val updated = _products.value.map {
+                if (it.category == old) it.copy(category = new) else it
+            }
+            productDao.upsertAll(updated)
+        }
+    }
+
+    fun deleteCategoryAndProducts(category: String) {
+        scope.launch {
+            val filtered = _products.value.filter {
+                it.category != category
+            }
+            productDao.upsertAll(filtered)
+        }
+    }
+
+    fun moveProductsToCategory(old: String, new: String) {
+        scope.launch {
+            val updated = _products.value.map {
+                if (it.category == old) it.copy(category = new) else it
+            }
+            productDao.upsertAll(updated)
+        }
+    }
 
     private suspend fun populateSampleProducts() {
 

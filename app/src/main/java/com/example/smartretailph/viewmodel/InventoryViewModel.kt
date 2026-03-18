@@ -35,5 +35,28 @@ class InventoryViewModel : ViewModel() {
             InventoryRepository.deleteProduct(id)
         }
     }
+
+    fun deleteCategoryAndProducts(category: String) {
+        viewModelScope.launch {
+            InventoryRepository.deleteCategoryAndProducts(category)
+        }
+    }
+
+    fun moveProductsToCategory(old: String, new: String) {
+        viewModelScope.launch {
+            InventoryRepository.moveProductsToCategory(old, new)
+        }
+    }
+
+    fun renameCategory(oldCategory: String, newCategory: String) {
+        viewModelScope.launch {
+            val updated = products.value.map {
+                if (it.category == oldCategory) {
+                    it.copy(category = newCategory)
+                } else it
+            }
+            InventoryRepository.renameCategory(oldCategory, newCategory)
+        }
+    }
 }
 

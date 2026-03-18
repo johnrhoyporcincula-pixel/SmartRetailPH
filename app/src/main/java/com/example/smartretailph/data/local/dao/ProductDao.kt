@@ -28,5 +28,8 @@ interface ProductDao {
 
     @Query("SELECT COUNT(*) FROM products")
     suspend fun countProducts(): Int
+
+    @Query("DELETE FROM products WHERE category = :category")
+    suspend fun deleteByCategory(category: String)
 }
 

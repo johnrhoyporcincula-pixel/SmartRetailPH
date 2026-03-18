@@ -72,7 +72,8 @@ fun ReportsScreen(
 ) {
     val state by reportsViewModel.state.collectAsState()
     val context = LocalContext.current
-    var selectedPeriod by remember { mutableStateOf(ReportPeriod.TODAY) }
+
+    val selectedPeriod by reportsViewModel.selectedPeriod.collectAsState()
 
     // For now, period buttons are visual only; using full dataset keeps this screen stable.
     val filteredSalesByDay = state.salesByDay
@@ -86,30 +87,40 @@ fun ReportsScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Column {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
 
-                    Button(onClick = { selectedPeriod = ReportPeriod.TODAY }) {
-                        Text("Today")
-                    }
+                ReportPeriodButton(
+                    text = "Today",
+                    period = ReportPeriod.TODAY,
+                    selectedPeriod = selectedPeriod,
+                    onClick = { reportsViewModel.setPeriod(ReportPeriod.TODAY) }
+                )
 
-                    Button(onClick = { selectedPeriod = ReportPeriod.WEEK }) {
-                        Text("This Week")
-                    }
+                ReportPeriodButton(
+                    text = "This Week",
+                    period = ReportPeriod.WEEK,
+                    selectedPeriod = selectedPeriod,
+                    onClick = { reportsViewModel.setPeriod(ReportPeriod.WEEK) }
+                )
 
-                    Button(onClick = { selectedPeriod = ReportPeriod.MONTH }) {
-                        Text("This Month")
-                    }
+                ReportPeriodButton(
+                    text = "This Month",
+                    period = ReportPeriod.MONTH,
+                    selectedPeriod = selectedPeriod,
+                    onClick = { reportsViewModel.setPeriod(ReportPeriod.MONTH) }
+                )
 
-                    Button(onClick = { selectedPeriod = ReportPeriod.YEAR }) {
-                        Text("This Year")
-                    }
-                }
+                ReportPeriodButton(
+                    text = "This Year",
+                    period = ReportPeriod.YEAR,
+                    selectedPeriod = selectedPeriod,
+                    onClick = { reportsViewModel.setPeriod(ReportPeriod.YEAR) }
+                )
             }
         }
 
@@ -464,7 +475,9 @@ private fun SalesOverviewGraph(
 @Composable
 private fun SalesLineChart(data: List<Map.Entry<String, Double>>) {
 
-    val maxValue = data.maxOf { it.value }
+    if (data.size < 2) return   // ✅ PREVENT CRASH
+
+    val maxValue = data.maxOf { it.value }.takeIf { it > 0 } ?: 1.0
 
     Canvas(
         modifier = Modifier
@@ -648,3 +661,26 @@ private fun CategoryPieChart(
     }
 }
 
+@Composable
+private fun ReportPeriodButton(
+    text: String,
+    period: ReportPeriod,
+    selectedPeriod: ReportPeriod,
+    onClick: () -> Unit
+) {
+    val isSelected = period == selectedPeriod
+
+    Button(
+        onClick = onClick,
+        shape = RoundedCornerShape(50),
+        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+            containerColor = if (isSelected) Color(0xFF2563EB) else Color.White,
+            contentColor = if (isSelected) Color.White else Color(0xFF2563EB)
+        ),
+        border = if (!isSelected)
+            androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF2563EB))
+        else null
+    ) {
+        Text(text)
+    }
+}
