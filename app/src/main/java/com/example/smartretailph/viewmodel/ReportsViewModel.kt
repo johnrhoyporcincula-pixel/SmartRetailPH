@@ -1,5 +1,7 @@
 package com.example.smartretailph.viewmodel
 
+import java.time.Instant
+import java.time.ZoneId
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.smartretailph.data.repositories.InventoryRepository
@@ -50,7 +52,10 @@ class ReportsViewModel : ViewModel() {
                 val byDay = mutableMapOf<String, Double>()
 
                 orders.forEach { order ->
-                    val key = dateFmt.format(Date(order.createdAtMillis))
+                    val key = Instant.ofEpochMilli(order.createdAtMillis)
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate()
+                        .toString()
                     byDay[key] = (byDay[key] ?: 0.0) + order.totalAmount
                 }
 
@@ -87,7 +92,7 @@ class ReportsViewModel : ViewModel() {
                     .map { entry ->
 
                         val name =
-                            products.find { it.id == entry.key }?.name ?: entry.key
+                            productMap[entry.key]?.name ?: entry.key
 
                         name to entry.value
                     }
@@ -97,12 +102,18 @@ class ReportsViewModel : ViewModel() {
                 val last7 = sortedDays.takeLast(7).map { it.value }
 
                 val forecast =
-                    if (last7.isNotEmpty()) last7.average()
-                    else 0.0
+                    if (last7.size >= 2) {
+                        val trend = last7.last() - last7.first()
+                        last7.average() + (trend / last7.size)
+                    } else {
+                        last7.firstOrNull() ?: 0.0
+                    }
 
                 // LOW STOCK
                 val lowStock =
-                    products.filter { it.stockQuantity < 10 }
+                    products
+                        .filter { it.stockQuantity < 10 }
+                        .sortedBy { it.stockQuantity }
                         .map { it.name to it.stockQuantity }
 
                 ReportsState(
@@ -117,7 +128,9 @@ class ReportsViewModel : ViewModel() {
                 )
             }.collect { newState ->
 
-                _state.value = newState
+                if (_state.value != newState) {
+                    _state.value = newState
+                }
             }
         }
     }

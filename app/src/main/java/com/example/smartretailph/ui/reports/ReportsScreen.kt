@@ -647,4 +647,3 @@ private fun CategoryPieChart(
         }
     }
 }
-
