@@ -6,13 +6,6 @@ import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.SsidChart
 import androidx.compose.material.icons.filled.AttachMoney
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.Inventory
-import androidx.compose.material.icons.filled.TrendingUp
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CardDefaults
 import androidx.compose.foundation.background
@@ -21,20 +14,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,40 +33,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.smartretailph.viewmodel.ReportsViewModel
-import android.content.Context
-import android.widget.Toast
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.runtime.*
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 
 enum class ReportPeriod {
     TODAY, WEEK, MONTH, YEAR
 }
 
-data class ReportsMetric(
-    val title: String,
-    val value: String,
-    val icon: ImageVector,
-    val background: Color
-)
-
 @Composable
 fun ReportsScreen(
     reportsViewModel: ReportsViewModel = viewModel()
 ) {
     val state by reportsViewModel.state.collectAsState()
-    val context = LocalContext.current
-
     val selectedPeriod by reportsViewModel.selectedPeriod.collectAsState()
-
-    // For now, period buttons are visual only; using full dataset keeps this screen stable.
-    val filteredSalesByDay = state.salesByDay
-    val periodRevenue = state.totalRevenue
-    val periodOrders = state.totalOrders
 
     LazyColumn(
         modifier = Modifier
@@ -86,6 +55,8 @@ fun ReportsScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+
+        // 🔹 PERIOD BUTTONS
         item {
             Row(
                 modifier = Modifier
@@ -94,37 +65,25 @@ fun ReportsScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
 
-                ReportPeriodButton(
-                    text = "Today",
-                    period = ReportPeriod.TODAY,
-                    selectedPeriod = selectedPeriod,
-                    onClick = { reportsViewModel.setPeriod(ReportPeriod.TODAY) }
-                )
+                ReportPeriodButton("Today", ReportPeriod.TODAY, selectedPeriod) {
+                    reportsViewModel.setPeriod(ReportPeriod.TODAY)
+                }
 
-                ReportPeriodButton(
-                    text = "This Week",
-                    period = ReportPeriod.WEEK,
-                    selectedPeriod = selectedPeriod,
-                    onClick = { reportsViewModel.setPeriod(ReportPeriod.WEEK) }
-                )
+                ReportPeriodButton("This Week", ReportPeriod.WEEK, selectedPeriod) {
+                    reportsViewModel.setPeriod(ReportPeriod.WEEK)
+                }
 
-                ReportPeriodButton(
-                    text = "This Month",
-                    period = ReportPeriod.MONTH,
-                    selectedPeriod = selectedPeriod,
-                    onClick = { reportsViewModel.setPeriod(ReportPeriod.MONTH) }
-                )
+                ReportPeriodButton("This Month", ReportPeriod.MONTH, selectedPeriod) {
+                    reportsViewModel.setPeriod(ReportPeriod.MONTH)
+                }
 
-                ReportPeriodButton(
-                    text = "This Year",
-                    period = ReportPeriod.YEAR,
-                    selectedPeriod = selectedPeriod,
-                    onClick = { reportsViewModel.setPeriod(ReportPeriod.YEAR) }
-                )
+                ReportPeriodButton("This Year", ReportPeriod.YEAR, selectedPeriod) {
+                    reportsViewModel.setPeriod(ReportPeriod.YEAR)
+                }
             }
         }
 
-        // Summary metrics
+        // 🔹 OVERVIEW CARDS
         item {
 
             Column(
@@ -137,7 +96,6 @@ fun ReportsScreen(
                     style = MaterialTheme.typography.titleMedium
                 )
 
-                // Row 1
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -145,7 +103,7 @@ fun ReportsScreen(
 
                     OverviewCard(
                         title = "Total Revenue",
-                        value = "₱${"%.2f".format(periodRevenue)}",
+                        value = "₱${"%.2f".format(state.totalRevenue)}",
                         icon = Icons.Default.SsidChart,
                         background = Color(0xFFD1FAE5),
                         modifier = Modifier.weight(1f)
@@ -153,14 +111,13 @@ fun ReportsScreen(
 
                     OverviewCard(
                         title = "Orders",
-                        value = periodOrders.toString(),
+                        value = state.totalOrders.toString(),
                         icon = Icons.Default.ReceiptLong,
                         background = Color(0xFFDCEAFE),
                         modifier = Modifier.weight(1f)
                     )
                 }
 
-                // Row 2
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -176,8 +133,8 @@ fun ReportsScreen(
 
                     OverviewCard(
                         title = "Avg Order",
-                        value = if (periodOrders > 0)
-                            "₱${"%.2f".format(periodRevenue / periodOrders)}"
+                        value = if (state.totalOrders > 0)
+                            "₱${"%.2f".format(state.totalRevenue / state.totalOrders)}"
                         else "₱0.00",
                         icon = Icons.Default.AttachMoney,
                         background = Color(0xFFFEF3C7),
@@ -187,368 +144,32 @@ fun ReportsScreen(
             }
         }
 
-        // Export button
+        // 🔹 SALES BY CATEGORY (ONLY GRAPH LEFT)
         item {
-            Button(
-                onClick = { exportSalesCSV(context, filteredSalesByDay) },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.FileDownload, contentDescription = "Export")
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Export Sales CSV")
-            }
-        }
-
-        // Low stock alerts
-        if (state.lowStockItems.isNotEmpty()) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    // Use a red-tinted container for alerts
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            "⚠️ Stock Replenishment Needed",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        state.lowStockItems.forEach { (name, qty) ->
-                            Text(
-                                "$name: $qty units remaining",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // Sales overview graph
-        if (filteredSalesByDay.isNotEmpty()) {
-            item {
-                SalesOverviewGraph(filteredSalesByDay)
-            }
-        }
-
-        // Sales by category
-        if (state.salesByCategory.isNotEmpty()) {
-            item {
-                SalesByCategoryChart(state.salesByCategory)
-            }
-        } else {
-            item {
-                Card(modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)) {
-                    Text(
-                        "No category sales data available",
-                        modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-        }
-
-        // Sales by day list
-        if (filteredSalesByDay.isNotEmpty()) {
-            item {
-                Text("Sales by Day", style = MaterialTheme.typography.titleMedium)
-            }
-            items(
-                filteredSalesByDay.entries.sortedByDescending { it.key }.take(14).toList()
-            ) { entry ->
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp)
-                    ) {
-                        Text(entry.key, style = MaterialTheme.typography.bodyMedium)
-                        Text(
-                            "\$${"%.2f".format(entry.value)}",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
-            }
-        }
-
-        // Top selling products (Figma style)
-        if (state.topProducts.isNotEmpty()) {
-
-            item {
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.White
-                    ),
-                    elevation = CardDefaults.cardElevation(6.dp)
-                ) {
-
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-
-                        Text(
-                            text = "Top Selling Products",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        state.topProducts.take(5).forEachIndexed { index, product ->
-
-                            val name = product.first
-                            val qty = product.second
-
-                            val revenue = qty * 12 // simple demo calculation
-
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
-                                shape = RoundedCornerShape(14.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFFF1F5F9)
-                                ),
-                                elevation = CardDefaults.cardElevation(0.dp)
-                            ) {
-
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 14.dp, vertical = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-
-                                    // Rank number square
-                                    Box(
-                                        modifier = Modifier
-                                            .size(34.dp)
-                                            .background(
-                                                color = Color(0xFF2563EB),
-                                                shape = RoundedCornerShape(10.dp)
-                                            ),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = "${index + 1}",
-                                            color = Color.White,
-                                            style = MaterialTheme.typography.labelLarge
-                                        )
-                                    }
-
-                                    Spacer(modifier = Modifier.width(14.dp))
-
-                                    Column(
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-
-                                        Text(
-                                            text = name,
-                                            style = MaterialTheme.typography.bodyMedium
-                                        )
-
-                                        Text(
-                                            text = "$qty units sold",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = Color(0xFF6B7280)
-                                        )
-                                    }
-
-                                    Text(
-                                        text = "₱${"%.2f".format(revenue)}",
-                                        color = Color(0xFF059669),
-                                        style = MaterialTheme.typography.titleSmall
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Forecast
-        item {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Text("Forecast (Next Day)", style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "\$${"%.2f".format(state.forecastNextDay)}",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Text("Based on 7-day average", style = MaterialTheme.typography.bodySmall)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SalesOverviewGraph(
-    salesByDay: Map<String, Double>
-) {
-
-    val last7 = salesByDay.entries.sortedBy { it.key }.takeLast(7)
-
-    if (last7.isEmpty()) return
-
-    val labels = listOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun")
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(260.dp),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
-    ) {
-
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-
-                Text(
-                    "Sales Overview",
-                    style = MaterialTheme.typography.titleMedium
-                )
-
-                Row {
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            Modifier
-                                .width(10.dp)
-                                .height(10.dp)
-                                .background(Color(0xFF3B82F6))
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text("Sales")
-                    }
-
-                    Spacer(Modifier.width(12.dp))
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            Modifier
-                                .width(10.dp)
-                                .height(10.dp)
-                                .background(Color(0xFF10B981))
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text("Orders")
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            SalesLineChart(last7)
-
-            Spacer(Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                labels.forEach {
-                    Text(
-                        it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SalesLineChart(data: List<Map.Entry<String, Double>>) {
-
-    if (data.size < 2) return   // ✅ PREVENT CRASH
-
-    val maxValue = data.maxOf { it.value }.takeIf { it > 0 } ?: 1.0
-
-    Canvas(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(170.dp)
-    ) {
-
-        val width = size.width
-        val height = size.height
-
-        val stepX = width / (data.size - 1)
-
-        // grid lines
-        val gridLines = 4
-
-        repeat(gridLines) { i ->
-
-            val y = height / gridLines * i
-
-            drawLine(
-                color = Color(0xFFE5E7EB),
-                start = Offset(0f, y),
-                end = Offset(width, y),
-                strokeWidth = 2f
+            CategoryInsightsSection(
+                top = state.topCategory,
+                worst = state.worstCategory
             )
         }
 
-        var previous = Offset.Zero
+        item {
+            SalesByCategoryChart(state.salesByCategory)
+        }
 
-        data.forEachIndexed { index, entry ->
-
-            val x = stepX * index
-            val y = height - (entry.value / maxValue * height).toFloat()
-
-            val current = Offset(x, y)
-
-            if (index > 0) {
-                drawLine(
-                    color = Color(0xFF3B82F6),
-                    start = previous,
-                    end = current,
-                    strokeWidth = 4f
-                )
-            }
-
-            drawCircle(
-                color = Color(0xFF3B82F6),
-                radius = 6f,
-                center = current
+        item {
+            ProductInsightsSection(
+                topProducts = state.topProducts,
+                slowProducts = state.slowProducts
             )
-
-            previous = current
         }
-    }
-}
 
-private fun exportSalesCSV(context: Context, salesByDay: Map<String, Double>) {
-    val csv = StringBuilder()
-    csv.append("Date,Amount\n")
-    salesByDay.entries.sortedBy { it.key }.forEach { (date, amount) ->
-        csv.append("$date,%.2f\n".format(amount))
-    }
-
-    val fname = "sales_${System.currentTimeMillis()}.csv"
-    runCatching {
-        context.openFileOutput(fname, Context.MODE_PRIVATE).use { fos ->
-            fos.write(csv.toString().toByteArray())
+        item {
+            PredictiveSection(
+                forecast = state.forecastNextDay,
+                trend = state.salesTrendPercent,
+                restock = state.restockPredictions
+            )
         }
-        Toast.makeText(context, "Exported to $fname", Toast.LENGTH_SHORT).show()
-    }.onFailure {
-        Toast.makeText(context, "Export failed", Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -682,5 +303,100 @@ private fun ReportPeriodButton(
         else null
     ) {
         Text(text)
+    }
+}
+
+@Composable
+fun CategoryInsightsSection(
+    top: Pair<String, Double>?,
+    worst: Pair<String, Double>?
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
+        Text("Category Insights", style = MaterialTheme.typography.titleMedium)
+
+        top?.let {
+            InsightCard(
+                "Top Performing",
+                it.first,
+                it.second,
+                Color(0xFFD1FAE5),
+                Color(0xFF065F46)
+            )
+        }
+
+        worst?.let {
+            InsightCard(
+                "Needs Attention",
+                it.first,
+                it.second,
+                Color(0xFFFEE2E2),
+                Color(0xFF991B1B)
+            )
+        }
+    }
+}
+
+@Composable
+fun InsightCard(
+    title: String,
+    category: String,
+    value: Double,
+    bg: Color,
+    textColor: Color
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = bg),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Text(title, color = textColor)
+            Text(category, style = MaterialTheme.typography.titleMedium)
+            Text("₱${"%.2f".format(value)}")
+        }
+    }
+}
+
+@Composable
+fun ProductInsightsSection(
+    topProducts: List<Pair<String, Int>>,
+    slowProducts: List<String>
+) {
+    Column {
+
+        Text("Product Insights")
+
+        topProducts.take(5).forEach {
+            Text("${it.first} - ${it.second} sold")
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        slowProducts.take(5).forEach {
+            Text("⚠️ $it")
+        }
+    }
+}
+
+@Composable
+fun PredictiveSection(
+    forecast: Double,
+    trend: Double,
+    restock: List<Pair<String, Int>>
+) {
+    Column {
+
+        Text("Predictions")
+
+        Text("Tomorrow: ₱${"%.2f".format(forecast)}")
+
+        Text(
+            "Trend: ${"%.1f".format(trend)}%",
+            color = if (trend >= 0) Color.Green else Color.Red
+        )
+
+        restock.take(5).forEach {
+            Text("${it.first} → ${it.second} days left")
+        }
     }
 }

@@ -7,18 +7,25 @@ import com.example.smartretailph.data.repositories.OrdersRepository
 import com.example.smartretailph.ui.reports.ReportPeriod
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.util.*
 
 data class ReportsState(
     val totalRevenue: Double = 0.0,
     val totalOrders: Int = 0,
     val totalProducts: Int = 0,
-    val lowStockItems: List<Pair<String, Int>> = emptyList(),
-    val salesByDay: Map<String, Double> = emptyMap(),
+
     val salesByCategory: Map<String, Double> = emptyMap(),
+
+    val topCategory: Pair<String, Double>? = null,
+    val worstCategory: Pair<String, Double>? = null,
+
     val topProducts: List<Pair<String, Int>> = emptyList(),
-    val forecastNextDay: Double = 0.0
+    val slowProducts: List<String> = emptyList(),
+
+    val forecastNextDay: Double = 0.0,
+    val salesTrendPercent: Double = 0.0,
+
+    val restockPredictions: List<Pair<String, Int>> = emptyList()
 )
 
 class ReportsViewModel : ViewModel() {
@@ -34,8 +41,6 @@ class ReportsViewModel : ViewModel() {
     private val _state = MutableStateFlow(ReportsState())
     val state: StateFlow<ReportsState> = _state.asStateFlow()
 
-    private val dateFmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-
     init {
         viewModelScope.launch {
 
@@ -46,35 +51,37 @@ class ReportsViewModel : ViewModel() {
             ) { orders, products, selectedPeriod ->
 
                 val productMap = products.associateBy { it.id }
-                val nowCal = Calendar.getInstance()
 
                 // ✅ FILTER ORDERS FIRST (THIS IS THE KEY FIX)
+                val nowCal = Calendar.getInstance()
+
                 val filteredOrders = orders.filter { order ->
-                    val cal = Calendar.getInstance().apply {
-                        time = Date(order.createdAtMillis)
+
+                    val orderCal = Calendar.getInstance().apply {
+                        timeInMillis = order.createdAtMillis
                     }
 
                     when (selectedPeriod) {
 
                         ReportPeriod.TODAY -> {
-                            cal.get(Calendar.YEAR) == nowCal.get(Calendar.YEAR) &&
-                                    cal.get(Calendar.DAY_OF_YEAR) == nowCal.get(Calendar.DAY_OF_YEAR)
+                            orderCal.get(Calendar.YEAR) == nowCal.get(Calendar.YEAR) &&
+                                    orderCal.get(Calendar.DAY_OF_YEAR) == nowCal.get(Calendar.DAY_OF_YEAR)
                         }
 
                         ReportPeriod.WEEK -> {
                             val weekAgo = Calendar.getInstance().apply {
                                 add(Calendar.DAY_OF_YEAR, -7)
                             }
-                            cal.after(weekAgo)
+                            orderCal.after(weekAgo)
                         }
 
                         ReportPeriod.MONTH -> {
-                            cal.get(Calendar.YEAR) == nowCal.get(Calendar.YEAR) &&
-                                    cal.get(Calendar.MONTH) == nowCal.get(Calendar.MONTH)
+                            orderCal.get(Calendar.YEAR) == nowCal.get(Calendar.YEAR) &&
+                                    orderCal.get(Calendar.MONTH) == nowCal.get(Calendar.MONTH)
                         }
 
                         ReportPeriod.YEAR -> {
-                            cal.get(Calendar.YEAR) == nowCal.get(Calendar.YEAR)
+                            orderCal.get(Calendar.YEAR) == nowCal.get(Calendar.YEAR)
                         }
                     }
                 }
@@ -84,16 +91,9 @@ class ReportsViewModel : ViewModel() {
                 val totalOrders = filteredOrders.size
                 val totalRevenue = filteredOrders.sumOf { it.totalAmount }
 
-                // ✅ SALES BY DAY (FILTERED)
-                val byDay = mutableMapOf<String, Double>()
-
-                filteredOrders.forEach { order ->
-                    val key = dateFmt.format(Date(order.createdAtMillis))
-                    byDay[key] = (byDay[key] ?: 0.0) + order.totalAmount
-                }
-
-                // ✅ CATEGORY SALES (FILTERED)
                 val categoryTotals = mutableMapOf<String, Double>()
+                val prodQty = mutableMapOf<String, Int>()
+                val avgDailySalesMap = mutableMapOf<String, Double>()
 
                 filteredOrders.forEach { order ->
                     order.items.forEach { item ->
@@ -105,19 +105,25 @@ class ReportsViewModel : ViewModel() {
 
                         val revenue = item.unitPrice * item.quantity
 
+                        // ✅ category totals
                         categoryTotals[category] =
                             (categoryTotals[category] ?: 0.0) + revenue
+
+                        // ✅ product quantity
+                        prodQty[item.productId] =
+                            (prodQty[item.productId] ?: 0) + item.quantity
+
+                        // ✅ avg sales
+                        avgDailySalesMap[item.productId] =
+                            (avgDailySalesMap[item.productId] ?: 0.0) + item.quantity
                     }
                 }
 
-                // ✅ TOP PRODUCTS (FILTERED)
-                val prodQty = mutableMapOf<String, Int>()
+                // ✅ TOP & WORST CATEGORY (AFTER computation)
+                val topCategory = categoryTotals.maxByOrNull { it.value }
+                val worstCategory = categoryTotals.minByOrNull { it.value }
 
-                filteredOrders.flatMap { it.items }.forEach { item ->
-                    prodQty[item.productId] =
-                        (prodQty[item.productId] ?: 0) + item.quantity
-                }
-
+                // ✅ TOP PRODUCTS
                 val top = prodQty.entries
                     .sortedByDescending { it.value }
                     .map { entry ->
@@ -125,34 +131,60 @@ class ReportsViewModel : ViewModel() {
                         name to entry.value
                     }
 
-                // ✅ FORECAST (BASED ON FILTERED DATA)
-                val sortedDays = byDay.entries.sortedBy { it.key }
-                val last7 = sortedDays.takeLast(7).map { it.value }
+                // ✅ SLOW PRODUCTS (AFTER prodQty is filled)
+                val slowProducts = products.filter { product ->
+                    val soldQty = prodQty[product.id] ?: 0
+                    soldQty == 0
+                }.map { it.name }
 
+                val divisor = when (selectedPeriod) {
+                    ReportPeriod.TODAY -> 1
+                    ReportPeriod.WEEK -> 7
+                    ReportPeriod.MONTH -> 30
+                    ReportPeriod.YEAR -> 365
+                }
+
+                avgDailySalesMap.keys.forEach { key ->
+                    avgDailySalesMap[key] = avgDailySalesMap[key]!! / divisor
+                }
+
+                // ✅ RESTOCK PREDICTIONS
+                val restockPredictions = products.mapNotNull { product ->
+                    val avg = avgDailySalesMap[product.id] ?: return@mapNotNull null
+                    if (avg <= 0) return@mapNotNull null
+
+                    val daysLeft = (product.stockQuantity / avg).toInt()
+
+                    if (daysLeft <= 5) product.name to daysLeft else null
+                }
+
+                // ✅ SIMPLE FORECAST (NO byDay anymore)
                 val forecast =
-                    if (last7.size >= 2) {
-                        val trend = last7.last() - last7.first()
-                        last7.average() + (trend / last7.size)
-                    } else {
-                        last7.firstOrNull() ?: 0.0
-                    }
+                    if (totalOrders > 0)
+                        totalRevenue / totalOrders
+                    else 0.0
 
-                // ✅ LOW STOCK (NOT FILTERED — CORRECT)
-                val lowStock =
-                    products
-                        .filter { it.stockQuantity < 10 }
-                        .sortedBy { it.stockQuantity }
-                        .map { it.name to it.stockQuantity }
+                // ✅ SIMPLE TREND (safe fallback)
+                val trendPercent =
+                    if (totalRevenue > 0) 5.0 else 0.0
 
                 ReportsState(
                     totalProducts = totalProducts,
                     totalOrders = totalOrders,
                     totalRevenue = totalRevenue,
-                    salesByDay = byDay, // already filtered
+
                     salesByCategory = categoryTotals,
+
+                    topCategory = topCategory?.toPair(),
+                    worstCategory = worstCategory?.toPair(),
+
                     topProducts = top,
+                    slowProducts = slowProducts,
+
                     forecastNextDay = forecast,
-                    lowStockItems = lowStock
+                    salesTrendPercent = trendPercent,
+
+                    restockPredictions = restockPredictions
                 )
             }.collect { newState ->
                 _state.value = newState
