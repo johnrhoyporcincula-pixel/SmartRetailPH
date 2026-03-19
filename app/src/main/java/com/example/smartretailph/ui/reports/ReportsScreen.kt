@@ -37,6 +37,17 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.runtime.remember
+
+val ChartColors = listOf(
+    Color(0xFF4285F4),
+    Color(0xFF34A853),
+    Color(0xFFFBBC05),
+    Color(0xFFEA4335),
+    Color(0xFF9C27B0),
+    Color(0xFF00ACC1)
+)
 
 enum class ReportPeriod {
     TODAY, WEEK, MONTH, YEAR
@@ -44,13 +55,14 @@ enum class ReportPeriod {
 
 @Composable
 fun ReportsScreen(
+    modifier: Modifier = Modifier,
     reportsViewModel: ReportsViewModel = viewModel()
 ) {
     val state by reportsViewModel.state.collectAsState()
     val selectedPeriod by reportsViewModel.selectedPeriod.collectAsState()
 
     LazyColumn(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -58,27 +70,27 @@ fun ReportsScreen(
 
         // 🔹 PERIOD BUTTONS
         item {
+
+            val periods = listOf(
+                "Today" to ReportPeriod.TODAY,
+                "This Week" to ReportPeriod.WEEK,
+                "This Month" to ReportPeriod.MONTH,
+                "This Year" to ReportPeriod.YEAR
+            )
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-
-                ReportPeriodButton("Today", ReportPeriod.TODAY, selectedPeriod) {
-                    reportsViewModel.setPeriod(ReportPeriod.TODAY)
-                }
-
-                ReportPeriodButton("This Week", ReportPeriod.WEEK, selectedPeriod) {
-                    reportsViewModel.setPeriod(ReportPeriod.WEEK)
-                }
-
-                ReportPeriodButton("This Month", ReportPeriod.MONTH, selectedPeriod) {
-                    reportsViewModel.setPeriod(ReportPeriod.MONTH)
-                }
-
-                ReportPeriodButton("This Year", ReportPeriod.YEAR, selectedPeriod) {
-                    reportsViewModel.setPeriod(ReportPeriod.YEAR)
+                periods.forEach { (label, period) ->
+                    ReportPeriodButton(
+                        text = label,
+                        period = period,
+                        selectedPeriod = selectedPeriod,
+                        onClick = { reportsViewModel.setPeriod(period) }
+                    )
                 }
             }
         }
@@ -96,9 +108,11 @@ fun ReportsScreen(
                     style = MaterialTheme.typography.titleMedium
                 )
 
-                Row(
+                FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    maxItemsInEachRow = 2
                 ) {
 
                     OverviewCard(
@@ -116,12 +130,6 @@ fun ReportsScreen(
                         background = Color(0xFFDCEAFE),
                         modifier = Modifier.weight(1f)
                     )
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
 
                     OverviewCard(
                         title = "Items Sold",
@@ -175,43 +183,45 @@ fun ReportsScreen(
 
 @Composable
 private fun SalesByCategoryChart(
-    categoryData: Map<String, Double>
+    categoryData: Map<String, Double>,
+    modifier: Modifier = Modifier
 ) {
 
-    val total = categoryData.values.sum()
+    val chartData = remember(categoryData) {
+        val total = categoryData.values.sum()
 
-    val colors = listOf(
-        androidx.compose.ui.graphics.Color(0xFF4285F4),
-        androidx.compose.ui.graphics.Color(0xFF34A853),
-        androidx.compose.ui.graphics.Color(0xFFFBBC05),
-        androidx.compose.ui.graphics.Color(0xFFEA4335),
-        androidx.compose.ui.graphics.Color(0xFF9C27B0),
-        androidx.compose.ui.graphics.Color(0xFF00ACC1)
-    )
+        categoryData.entries.mapIndexed { index, entry ->
+            Triple(
+                entry,
+                if (total > 0) (entry.value / total) * 100 else 0.0,
+                index
+            )
+        }
+    }
 
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth()
     ) {
 
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
 
             Text(
-                "Sales by Category",
+                text = "Sales by Category",
                 style = MaterialTheme.typography.titleMedium
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier.fillMaxWidth()
             ) {
 
-                CategoryPieChart(categoryData, colors)
+                CategoryPieChart(
+                    categoryData = categoryData,
+                    colors = ChartColors
+                )
 
                 Spacer(modifier = Modifier.width(16.dp))
 
@@ -219,9 +229,11 @@ private fun SalesByCategoryChart(
                     modifier = Modifier.weight(1f)
                 ) {
 
-                    categoryData.entries.forEachIndexed { index, entry ->
+                    chartData.forEach { triple ->
 
-                        val percent = if (total > 0) (entry.value / total) * 100 else 0.0
+                        val entry = triple.first
+                        val percent = triple.second
+                        val index = triple.third
 
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -230,15 +242,14 @@ private fun SalesByCategoryChart(
 
                             Box(
                                 modifier = Modifier
-                                    .width(12.dp)
-                                    .height(12.dp)
-                                    .background(colors[index % colors.size])
+                                    .size(12.dp)
+                                    .background(ChartColors[index % ChartColors.size])
                             )
 
                             Spacer(modifier = Modifier.width(8.dp))
 
                             Text(
-                                "${entry.key} - ${"%.1f".format(percent)}%"
+                                text = "${entry.key} - ${"%.1f".format(percent)}%"
                             )
                         }
                     }
@@ -251,16 +262,14 @@ private fun SalesByCategoryChart(
 @Composable
 private fun CategoryPieChart(
     categoryData: Map<String, Double>,
-    colors: List<Color>
+    colors: List<Color>,
+    modifier: Modifier = Modifier
 ) {
-
     val total = categoryData.values.sum()
 
     Canvas(
-        modifier = Modifier
-            .size(150.dp)
+        modifier = modifier.size(150.dp)
     ) {
-
         var startAngle = -90f
 
         categoryData.entries.forEachIndexed { index, entry ->
@@ -287,12 +296,14 @@ private fun ReportPeriodButton(
     text: String,
     period: ReportPeriod,
     selectedPeriod: ReportPeriod,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val isSelected = period == selectedPeriod
 
     Button(
         onClick = onClick,
+        modifier = modifier,
         shape = RoundedCornerShape(50),
         colors = androidx.compose.material3.ButtonDefaults.buttonColors(
             containerColor = if (isSelected) Color(0xFF2563EB) else Color.White,
@@ -309,30 +320,41 @@ private fun ReportPeriodButton(
 @Composable
 fun CategoryInsightsSection(
     top: Pair<String, Double>?,
-    worst: Pair<String, Double>?
+    worst: Pair<String, Double>?,
+    modifier: Modifier = Modifier
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
 
-        Text("Category Insights", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "Category Insights",
+            style = MaterialTheme.typography.titleMedium
+        )
 
-        top?.let {
-            InsightCard(
-                "Top Performing",
-                it.first,
-                it.second,
-                Color(0xFFD1FAE5),
-                Color(0xFF065F46)
-            )
-        }
+        if (top == null && worst == null) {
+            EmptyStateCard("No category data available")
+        } else {
+            top?.let {
+                InsightCard(
+                    "Top Performing",
+                    it.first,
+                    it.second,
+                    Color(0xFFD1FAE5),
+                    Color(0xFF065F46)
+                )
+            }
 
-        worst?.let {
-            InsightCard(
-                "Needs Attention",
-                it.first,
-                it.second,
-                Color(0xFFFEE2E2),
-                Color(0xFF991B1B)
-            )
+            worst?.let {
+                InsightCard(
+                    "Needs Attention",
+                    it.first,
+                    it.second,
+                    Color(0xFFFEE2E2),
+                    Color(0xFF991B1B)
+                )
+            }
         }
     }
 }
@@ -343,11 +365,12 @@ fun InsightCard(
     category: String,
     value: Double,
     bg: Color,
-    textColor: Color
+    textColor: Color,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = bg),
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = bg)
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(title, color = textColor)
@@ -360,9 +383,10 @@ fun InsightCard(
 @Composable
 fun ProductInsightsSection(
     topProducts: List<Pair<String, Int>>,
-    slowProducts: List<String>
+    slowProducts: List<String>,
+    modifier: Modifier = Modifier
 ) {
-    Column {
+    Column(modifier = modifier) {
 
         Text("Product Insights")
 
@@ -382,9 +406,10 @@ fun ProductInsightsSection(
 fun PredictiveSection(
     forecast: Double,
     trend: Double,
-    restock: List<Pair<String, Int>>
+    restock: List<Pair<String, Int>>,
+    modifier: Modifier = Modifier
 ) {
-    Column {
+    Column(modifier = modifier) {
 
         Text("Predictions")
 
@@ -397,6 +422,30 @@ fun PredictiveSection(
 
         restock.take(5).forEach {
             Text("${it.first} → ${it.second} days left")
+        }
+    }
+}
+
+@Composable
+fun EmptyStateCard(
+    message: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
