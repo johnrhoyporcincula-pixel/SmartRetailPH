@@ -42,4 +42,3 @@ object ReceiptsRepository {
         receiptDao.upsert(ReceiptEntity(orderId = orderId, text = receiptText))
     }
 }
-

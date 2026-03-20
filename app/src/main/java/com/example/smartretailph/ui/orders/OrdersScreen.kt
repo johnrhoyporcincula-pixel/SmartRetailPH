@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.smartretailph.data.models.Order
 import com.example.smartretailph.viewmodel.OrdersViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -29,6 +30,7 @@ import java.util.*
 fun OrdersScreen(
     ordersViewModel: OrdersViewModel = viewModel()
 ) {
+    var completedOrder by remember { mutableStateOf<Order?>(null) }
 
     val orders by com.example.smartretailph.data.repositories.OrdersRepository
         .orders

@@ -50,6 +50,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.times
+import androidx.compose.foundation.layout.FlowRow
 
 data class QuickAction(
     val title: String,
@@ -61,6 +62,7 @@ data class QuickAction(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
+    modifier: Modifier = Modifier,
     dashboardViewModel: DashboardViewModel = viewModel(),
     onNavigateToInventory: () -> Unit = {},
     onNavigateToOrders: () -> Unit = {},
@@ -149,10 +151,11 @@ fun DashboardScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
 
-                // Row 1
-                Row(
+                FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    maxItemsInEachRow = 2
                 ) {
 
                     OverviewCard(
@@ -170,13 +173,6 @@ fun DashboardScreen(
                         background = Color(0xFFD1FAE5),
                         modifier = Modifier.weight(1f)
                     )
-                }
-
-                // Row 2
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
 
                     OverviewCard(
                         title = "Low Stock",
@@ -207,21 +203,20 @@ fun DashboardScreen(
         }
 
         item {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(((quickActions.size + 1) / 2) * 120.dp)
+                maxItemsInEachRow = 2
             ) {
 
-                items(quickActions) { action ->
+                quickActions.forEach { action ->
 
                     GradientActionCard(
                         title = action.title,
                         icon = action.icon,
                         colors = action.colors,
+                        modifier = Modifier.weight(1f),
                         onClick = action.action
                     )
                 }
@@ -248,18 +243,18 @@ fun DashboardScreen(
             }
         }
 
-        item { Spacer(modifier = Modifier.height(12.dp)) }
-
         item {
-            ActivityCard("Product Added", "Coca-Cola 500ml", "2h ago")
-        }
+            if (state.todaysOrdersCount == 0) {
+                EmptyStateCard("No recent activity today")
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
 
-        item {
-            ActivityCard("Stock Updated", "Whole Milk 1L", "4h ago")
-        }
+                    ActivityCard("Product Added", "Coca-Cola 500ml", "2h ago")
+                    ActivityCard("Stock Updated", "Whole Milk 1L", "4h ago")
+                    ActivityCard("Low Stock Alert", "White Bread", "6h ago")
 
-        item {
-            ActivityCard("Low Stock Alert", "White Bread", "6h ago")
+                }
+            }
         }
     }
 
@@ -285,49 +280,39 @@ fun DashboardScreen(
 fun OverviewCard(
     title: String,
     value: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     background: Color,
     modifier: Modifier = Modifier
 ) {
-
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(6.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = background
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp), // softer
+        colors = CardDefaults.cardColors(containerColor = background)
     ) {
 
         Column(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth()
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
 
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .background(
-                        Color.White.copy(alpha = 0.4f),
-                        shape = RoundedCornerShape(10.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null)
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodySmall
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp)
             )
 
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -386,7 +371,7 @@ fun GradientActionCard(
     Card(
         modifier = modifier.height(110.dp),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(6.dp),
+        elevation = CardDefaults.cardElevation(2.dp), // softer
         onClick = onClick
     ) {
 
@@ -452,11 +437,10 @@ fun ReportsBottomSheet(
             )
         }
 
-        Row(
+        FlowRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxWidth()
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-
             OverviewCard(
                 title = "Revenue",
                 value = "₱24.5K",
@@ -490,6 +474,27 @@ fun ReportsBottomSheet(
             Spacer(modifier = Modifier.size(8.dp))
 
             Text("Generate Report")
+        }
+    }
+}
+
+@Composable
+fun EmptyStateCard(
+    message: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Box(
+            modifier = Modifier.padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = message,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

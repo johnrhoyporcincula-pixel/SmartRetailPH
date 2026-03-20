@@ -338,6 +338,9 @@ fun InventoryScreen(
     var pendingCartItems by remember { mutableStateOf<List<com.example.smartretailph.data.models.OrderItem>>(emptyList()) }
     var pendingCartTotal by remember { mutableStateOf(0.0) }
 
+    var showReceipt by remember { mutableStateOf(false) }
+    var lastOrder by remember { mutableStateOf<com.example.smartretailph.data.models.Order?>(null) }
+
     val infiniteTransition = rememberInfiniteTransition(label = "cartPulse")
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 1f,
@@ -550,10 +553,14 @@ fun InventoryScreen(
                         com.example.smartretailph.data.repositories.ReceiptsRepository
                             .saveReceipt(createdOrder.id, receipt)
 
+                        // ✅ Save order for receipt
+                        lastOrder = createdOrder
+                        showReceipt = true
+
                         // ✅ Clear cart
                         cartViewModel.clear()
 
-                        // ✅ Reset dialog
+                        // ✅ Close dialog
                         showCheckoutDialog = false
                         checkoutCustomerName = "Walk-in"
                         cashReceived = ""
@@ -569,6 +576,15 @@ fun InventoryScreen(
         )
     }
 
+    if (showReceipt && lastOrder != null) {
+        com.example.smartretailph.ui.receipt.ReceiptScreen(
+            order = lastOrder!!,
+            onDone = {
+                showReceipt = false
+                lastOrder = null
+            }
+        )
+    }
 }
 
 @Composable

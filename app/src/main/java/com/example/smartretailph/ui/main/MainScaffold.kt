@@ -45,6 +45,7 @@ enum class MainTab(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScaffold(
+    modifier: Modifier = Modifier,
     onLogout: () -> Unit
 ) {
 
@@ -208,34 +209,30 @@ fun MainScaffold(
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFFFFEBEE)
+                            containerColor = MaterialTheme.colorScheme.errorContainer
                         ),
-                        shape = RoundedCornerShape(14.dp)
+                        shape = RoundedCornerShape(14.dp),
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            onLogout()
+                        }
                     ) {
-
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    scope.launch { drawerState.close() }
-                                    onLogout()
-                                }
-                                .padding(16.dp),
+                            modifier = Modifier.padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
 
                             Icon(
                                 Icons.Default.Logout,
                                 contentDescription = null,
-                                tint = Color.Red
+                                tint = MaterialTheme.colorScheme.error
                             )
 
                             Spacer(modifier = Modifier.width(12.dp))
 
                             Text(
                                 "Exit SmartRetailPH",
-                                color = Color.Red,
-                                style = MaterialTheme.typography.bodyLarge
+                                color = MaterialTheme.colorScheme.error
                             )
                         }
                     }
@@ -245,24 +242,23 @@ fun MainScaffold(
     ) {
 
         Scaffold(
-
+            modifier = modifier,
             topBar = {
 
                 Surface(
                     tonalElevation = 2.dp,
-                    shadowElevation = 6.dp,   // stronger but still soft shadow
-                    color = Color.White
+                    shadowElevation = 2.dp,
+                    color = MaterialTheme.colorScheme.surface
                 ) {
 
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(72.dp)   // increased height
+                            .height(64.dp)
                             .padding(horizontal = 16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
 
-                        // MENU
                         IconButton(
                             onClick = {
                                 scope.launch {
@@ -273,62 +269,47 @@ fun MainScaffold(
                         ) {
                             Icon(
                                 Icons.Default.Menu,
-                                contentDescription = "Menu",
-                                tint = Color(0xFF111827),
-                                modifier = Modifier.size(26.dp) // bigger icon
+                                contentDescription = "Menu"
                             )
                         }
 
-                        // TITLE
                         Text(
                             text = currentTopBarTitle,
                             modifier = Modifier
                                 .weight(1f)
                                 .padding(start = 8.dp),
-                            style = MaterialTheme.typography.titleLarge,
-                            color = Color(0xFF111827)
+                            style = MaterialTheme.typography.titleLarge
                         )
 
-                        // SEARCH
                         IconButton(onClick = {
-                            Toast
-                                .makeText(
-                                    context,
-                                    "Search coming soon. Showing inventory list.",
-                                    Toast.LENGTH_SHORT
-                                )
-                                .show()
-                            navController.navigate(MainRoutes.INVENTORY) {
-                                launchSingleTop = true
-                            }
+                            Toast.makeText(
+                                context,
+                                "Search coming soon",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }) {
-                            Icon(
-                                Icons.Default.Search,
-                                contentDescription = "Search",
-                                tint = Color(0xFF111827),
-                                modifier = Modifier.size(26.dp)
-                            )
+                            Icon(Icons.Default.Search, contentDescription = "Search")
                         }
 
-                        // NOTIFICATIONS
-                        Box {
-
+                        // 🔥 Notification with badge logic
+                        BadgedBox(
+                            badge = {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .background(
+                                            MaterialTheme.colorScheme.error,
+                                            CircleShape
+                                        )
+                                )
+                            }
+                        ) {
                             IconButton(onClick = { showNotifications = true }) {
                                 Icon(
                                     Icons.Default.Notifications,
-                                    contentDescription = "Notifications",
-                                    tint = Color(0xFF111827),
-                                    modifier = Modifier.size(26.dp)
+                                    contentDescription = "Notifications"
                                 )
                             }
-
-                            Box(
-                                modifier = Modifier
-                                    .size(10.dp)
-                                    .background(Color.Red, CircleShape)
-                                    .align(Alignment.TopEnd)
-                                    .offset(x = (-6).dp, y = 6.dp)
-                            )
                         }
                     }
                 }
@@ -395,7 +376,11 @@ fun MainScaffold(
                             alwaysShowLabel = true,
 
                             colors = NavigationBarItemDefaults.colors(
-                                indicatorColor = Color.Transparent
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                             )
                         )
                     }
@@ -448,7 +433,6 @@ fun MainScaffold(
                     }
 
                     // NEW DRAWER SCREENS
-
                     composable(MainRoutes.PROFILE) {
                         ProfileScreen()
                     }
@@ -485,46 +469,49 @@ fun DrawerItem(
     icon: ImageVector,
     title: String,
     badge: String? = null,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit = {}
 ) {
-
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .clickable { onClick() },
+            .padding(horizontal = 12.dp, vertical = 4.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFF3F4F6)
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        onClick = onClick
     ) {
 
         Row(
             modifier = Modifier
-                .fillMaxWidth()
                 .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
 
-            Icon(icon, contentDescription = null)
+            Icon(
+                icon,
+                contentDescription = title,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             Spacer(modifier = Modifier.width(12.dp))
 
             Text(
                 text = title,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyMedium
             )
 
-            if (badge != null) {
-
-                Box(
-                    modifier = Modifier
-                        .background(Color.Red, CircleShape)
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
+            badge?.let {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.error
                 ) {
                     Text(
-                        badge,
+                        it,
                         color = Color.White,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                         style = MaterialTheme.typography.labelSmall
                     )
                 }
