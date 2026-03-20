@@ -441,10 +441,6 @@ fun MainScaffold(
                         PreferencesScreen()
                     }
 
-                    composable(MainRoutes.SECURITY) {
-                        SecurityScreen()
-                    }
-
                     composable(MainRoutes.HELP) {
                         HelpScreen()
                     }

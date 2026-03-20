@@ -3,8 +3,6 @@ package com.example.smartretailph.ui.main
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,21 +11,26 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun PreferencesScreen() {
-
-    var notifications by remember { mutableStateOf(true) }
+fun PreferencesScreen(
+    modifier: Modifier = Modifier
+) {
+    var notificationsEnabled by remember { mutableStateOf(true) }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
 
-        Text("Preferences", style = MaterialTheme.typography.titleLarge)
+        Text(
+            text = "Preferences",
+            style = MaterialTheme.typography.titleLarge
+        )
 
-        Card(shape = RoundedCornerShape(16.dp)) {
-
+        Card(
+            shape = RoundedCornerShape(16.dp)
+        ) {
             Column {
 
                 PreferenceItem(
@@ -35,20 +38,10 @@ fun PreferencesScreen() {
                     title = "Push Notifications",
                     trailing = {
                         Switch(
-                            checked = notifications,
-                            onCheckedChange = { notifications = it }
+                            checked = notificationsEnabled,
+                            onCheckedChange = { notificationsEnabled = it }
                         )
                     }
-                )
-
-                PreferenceItem(
-                    icon = Icons.Default.DarkMode,
-                    title = "Dark Mode"
-                )
-
-                PreferenceItem(
-                    icon = Icons.Default.Language,
-                    title = "Language"
                 )
             }
         }
@@ -61,7 +54,6 @@ fun PreferenceItem(
     title: String,
     trailing: @Composable (() -> Unit)? = null
 ) {
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -70,12 +62,14 @@ fun PreferenceItem(
     ) {
 
         Row {
+            Icon(
+                imageVector = icon,
+                contentDescription = null
+            )
 
-            Icon(icon, null)
+            Spacer(modifier = Modifier.width(12.dp))
 
-            Spacer(Modifier.width(12.dp))
-
-            Text(title)
+            Text(text = title)
         }
 
         trailing?.invoke()
