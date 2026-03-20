@@ -1,5 +1,6 @@
 package com.example.smartretailph.ui.receipt
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,6 +15,9 @@ import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 
 @Composable
 fun ReceiptScreen(
@@ -100,11 +104,32 @@ fun ReceiptScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                Button(
-                    onClick = onDone,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Done")
+                val clipboard = LocalClipboardManager.current
+                val context = LocalContext.current
+
+                Column {
+                    Button(
+                        onClick = {
+                            clipboard.setText(
+                                AnnotatedString(
+                                    com.example.smartretailph.util.ReceiptGenerator.generate(order)
+                                )
+                            )
+                            Toast.makeText(context, "Receipt copied", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Copy Receipt")
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Button(
+                        onClick = onDone,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Done")
+                    }
                 }
             }
         }

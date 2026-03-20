@@ -31,6 +31,7 @@ fun OrdersScreen(
     ordersViewModel: OrdersViewModel = viewModel()
 ) {
     var completedOrder by remember { mutableStateOf<Order?>(null) }
+    var selectedReceipt by remember { mutableStateOf<String?>(null) }
 
     val orders by com.example.smartretailph.data.repositories.OrdersRepository
         .orders
@@ -149,15 +150,7 @@ fun OrdersScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-
-                            val receipt = receiptsMap[order.id]
-
-                            if (receipt != null) {
-                                clipboard.setText(AnnotatedString(receipt))
-                                Toast.makeText(context, "Receipt copied", Toast.LENGTH_SHORT).show()
-                            } else {
-                                Toast.makeText(context, "No receipt available", Toast.LENGTH_SHORT).show()
-                            }
+                            completedOrder = order   // 👈 show receipt screen instead
                         },
                     colors = CardDefaults.cardColors(
                         containerColor = Color.White
@@ -217,6 +210,14 @@ fun OrdersScreen(
                 }
             }
         }
+    }
+
+    // ✅ Show receipt UI (same as POS)
+    if (completedOrder != null) {
+        com.example.smartretailph.ui.receipt.ReceiptScreen(
+            order = completedOrder!!,
+            onDone = { completedOrder = null }
+        )
     }
 }
 
@@ -302,4 +303,3 @@ fun StatusPill(status: OrderStatus) {
         Text(status.name, color = color)
     }
 }
-

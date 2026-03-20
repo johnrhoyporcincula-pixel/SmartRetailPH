@@ -166,8 +166,8 @@ fun ReportsScreen(
 
         item {
             ProductInsightsSection(
-                topProducts = state.topProducts,
-                slowProducts = state.slowProducts
+                best = state.bestProduct,
+                worst = state.worstProduct
             )
         }
 
@@ -382,22 +382,35 @@ fun InsightCard(
 
 @Composable
 fun ProductInsightsSection(
-    topProducts: List<Pair<String, Int>>,
-    slowProducts: List<String>,
+    best: com.example.smartretailph.viewmodel.ProductInsight?,
+    worst: com.example.smartretailph.viewmodel.ProductInsight?,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
 
-        Text("Product Insights")
+        Text(
+            "Product Insights",
+            style = MaterialTheme.typography.titleMedium
+        )
 
-        topProducts.take(5).forEach {
-            Text("${it.first} - ${it.second} sold")
+        best?.let {
+            ProductInsightCard(
+                title = "Best Seller",
+                product = it,
+                bgColor = Color(0xFFE8F0FF),
+                accentColor = Color(0xFF2F6BFF)
+            )
         }
 
-        Spacer(Modifier.height(8.dp))
-
-        slowProducts.take(5).forEach {
-            Text("⚠️ $it")
+        worst?.let {
+            ProductInsightCard(
+                title = "Underperforming",
+                product = it,
+                bgColor = Color(0xFFFFF4E5),
+                accentColor = Color(0xFFFF9800)
+            )
         }
     }
 }
@@ -406,22 +419,96 @@ fun ProductInsightsSection(
 fun PredictiveSection(
     forecast: Double,
     trend: Double,
-    restock: List<Pair<String, Int>>,
+    restock: List<Pair<String, Int>>, // (can ignore visually for now)
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier) {
 
-        Text("Predictions")
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
 
-        Text("Tomorrow: ₱${"%.2f".format(forecast)}")
-
+        // 🔹 Title
         Text(
-            "Trend: ${"%.1f".format(trend)}%",
-            color = if (trend >= 0) Color.Green else Color.Red
+            text = "✨ Predictive Analytics",
+            style = MaterialTheme.typography.titleMedium
         )
 
-        restock.take(5).forEach {
-            Text("${it.first} → ${it.second} days left")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+
+            // 🔹 NEXT WEEK CARD
+            Card(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFFEDE9FE) // soft purple
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+
+                    Text(
+                        text = "Next Week",
+                        color = Color(0xFF6D28D9),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "₱${"%.0f".format(forecast * 7)}",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = "Predicted Revenue",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+            }
+
+            // 🔹 GROWTH CARD
+            Card(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFFF3E8FF) // lighter purple
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+
+                    Text(
+                        text = "Growth",
+                        color = Color(0xFF9333EA),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "${if (trend >= 0) "+" else ""}${"%.1f".format(trend)}%",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = if (trend >= 0) Color(0xFF16A34A) else Color.Red
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = "Expected Increase",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+            }
         }
     }
 }
@@ -446,6 +533,87 @@ fun EmptyStateCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+@Composable
+fun ProductInsightCard(
+    title: String,
+    product: com.example.smartretailph.viewmodel.ProductInsight,
+    bgColor: Color,
+    accentColor: Color
+) {
+
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = bgColor),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+
+        Column(modifier = Modifier.padding(16.dp)) {
+
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+
+                Column {
+
+                    Text(title, color = accentColor)
+
+                    Text(
+                        product.name,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+
+                    Text(
+                        product.category,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .background(
+                            accentColor,
+                            RoundedCornerShape(50)
+                        )
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        "${"%.1f".format(product.trendPercent)}%",
+                        color = Color.White
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+
+                MetricBox("Revenue", "₱${"%.2f".format(product.revenue)}")
+                MetricBox("Sales", "${product.sales} units")
+                MetricBox("Stock", "${product.stock}")
+            }
+        }
+    }
+}
+
+@Composable
+fun MetricBox(label: String, value: String) {
+
+    Box(
+        modifier = Modifier
+            .background(Color.White, RoundedCornerShape(12.dp))
+            .padding(12.dp)
+    ) {
+        Column {
+            Text(label, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Text(value, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

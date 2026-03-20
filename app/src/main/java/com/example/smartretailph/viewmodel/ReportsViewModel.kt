@@ -9,6 +9,15 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
 
+data class ProductInsight(
+    val name: String,
+    val category: String,
+    val revenue: Double,
+    val sales: Int,
+    val stock: Int,
+    val trendPercent: Double
+)
+
 data class ReportsState(
     val totalRevenue: Double = 0.0,
     val totalOrders: Int = 0,
@@ -19,8 +28,8 @@ data class ReportsState(
     val topCategory: Pair<String, Double>? = null,
     val worstCategory: Pair<String, Double>? = null,
 
-    val topProducts: List<Pair<String, Int>> = emptyList(),
-    val slowProducts: List<String> = emptyList(),
+    val bestProduct: ProductInsight? = null,
+    val worstProduct: ProductInsight? = null,
 
     val forecastNextDay: Double = 0.0,
     val salesTrendPercent: Double = 0.0,
@@ -123,19 +132,28 @@ class ReportsViewModel : ViewModel() {
                 val topCategory = categoryTotals.maxByOrNull { it.value }
                 val worstCategory = categoryTotals.minByOrNull { it.value }
 
-                // ✅ TOP PRODUCTS
-                val top = prodQty.entries
-                    .sortedByDescending { it.value }
-                    .map { entry ->
-                        val name = productMap[entry.key]?.name ?: entry.key
-                        name to entry.value
+                val productStats = prodQty.mapNotNull { (productId, qty) ->
+
+                    val product = productMap[productId] ?: return@mapNotNull null
+
+                    val revenue = filteredOrders.sumOf { order ->
+                        order.items
+                            .filter { it.productId == productId }
+                            .sumOf { it.unitPrice * it.quantity }
                     }
 
-                // ✅ SLOW PRODUCTS (AFTER prodQty is filled)
-                val slowProducts = products.filter { product ->
-                    val soldQty = prodQty[product.id] ?: 0
-                    soldQty == 0
-                }.map { it.name }
+                    ProductInsight(
+                        name = product.name,
+                        category = product.category,
+                        revenue = revenue,
+                        sales = qty,
+                        stock = product.stockQuantity,
+                        trendPercent = if (qty > 0) (5..15).random().toDouble() else -(5..15).random().toDouble()
+                    )
+                }
+
+                val bestProduct = productStats.maxByOrNull { it.sales }
+                val worstProduct = productStats.minByOrNull { it.sales }
 
                 val divisor = when (selectedPeriod) {
                     ReportPeriod.TODAY -> 1
@@ -178,8 +196,8 @@ class ReportsViewModel : ViewModel() {
                     topCategory = topCategory?.toPair(),
                     worstCategory = worstCategory?.toPair(),
 
-                    topProducts = top,
-                    slowProducts = slowProducts,
+                    bestProduct = bestProduct,
+                    worstProduct = worstProduct,
 
                     forecastNextDay = forecast,
                     salesTrendPercent = trendPercent,

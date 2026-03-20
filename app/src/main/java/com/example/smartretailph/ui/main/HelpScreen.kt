@@ -20,11 +20,6 @@ fun HelpScreen() {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
 
-        Text(
-            text = "Help & Support",
-            style = MaterialTheme.typography.titleLarge
-        )
-
         Card(shape = RoundedCornerShape(16.dp)) {
 
             Column {

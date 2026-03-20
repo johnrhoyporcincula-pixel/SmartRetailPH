@@ -8,13 +8,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun AboutScreen() {
-
+fun AboutScreen(versionName: String) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
 
             Text(
@@ -24,13 +22,11 @@ fun AboutScreen() {
 
             Spacer(Modifier.height(8.dp))
 
-            Text("Version 1.0")
+            Text("Version $versionName")
 
             Spacer(Modifier.height(12.dp))
 
-            Text(
-                "A modern retail management system\nfor small businesses."
-            )
+            Text("A modern retail management system\nfor small businesses.")
         }
     }
 }

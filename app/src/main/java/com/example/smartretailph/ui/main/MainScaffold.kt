@@ -56,7 +56,7 @@ fun MainScaffold(
     val context = LocalContext.current
     val versionName = remember {
         context.packageManager
-            .getPackageInfo(context.packageName, 0).versionName
+            .getPackageInfo(context.packageName, 0).versionName ?: "1.0"
     }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -450,7 +450,7 @@ fun MainScaffold(
                     }
 
                     composable(MainRoutes.ABOUT) {
-                        AboutScreen()
+                        AboutScreen(versionName)
                     }
                 }
 
