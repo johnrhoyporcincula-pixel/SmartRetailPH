@@ -450,4 +450,3 @@ fun ProductItemCard(
         }
     }
 }
-

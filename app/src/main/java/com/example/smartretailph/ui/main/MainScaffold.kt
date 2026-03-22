@@ -31,6 +31,10 @@ import com.example.smartretailph.ui.reports.ReportsScreen
 import kotlinx.coroutines.launch
 import com.example.smartretailph.ui.inventory.InventoryManagementScreen
 import android.widget.Toast
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.smartretailph.viewmodel.NotificationsViewModel
+import com.example.smartretailph.viewmodel.ReportsViewModel
+import com.example.smartretailph.viewmodel.ReportsViewModelFactory
 
 enum class MainTab(
     val route: String,
@@ -45,9 +49,11 @@ enum class MainTab(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScaffold(
+    notificationsVM: NotificationsViewModel, // ✅ RECEIVE IT
     modifier: Modifier = Modifier,
     onLogout: () -> Unit
 ) {
+    val notifications by notificationsVM.notifications.collectAsState()
 
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
@@ -61,6 +67,13 @@ fun MainScaffold(
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: MainRoutes.DASHBOARD
+
+    var showNotifications by remember { mutableStateOf(false) }
+
+    // 🔥 FIX: auto-close when navigating
+    LaunchedEffect(currentRoute) {
+        showNotifications = false
+    }
 
     val currentTopBarTitle = when (currentRoute) {
         MainRoutes.DASHBOARD -> "Dashboard"
@@ -83,8 +96,6 @@ fun MainScaffold(
         MainTab.ORDERS,
         MainTab.REPORTS
     )
-
-    var showNotifications by remember { mutableStateOf(false) }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -186,12 +197,17 @@ fun MainScaffold(
 
                     DrawerItem(Icons.Default.Inventory2, "Inventory Management") {
                         scope.launch { drawerState.close() }
-                        navController.navigate(MainRoutes.INVENTORY_MANAGEMENT)
+                        navController.navigate(MainRoutes.INVENTORY_MANAGEMENT) {
+                            launchSingleTop = true
+                            restoreState = false
+                        }
                     }
 
                     DrawerItem(Icons.Default.Security, "Privacy & Security") {
                         scope.launch { drawerState.close() }
-                        navController.navigate(MainRoutes.SECURITY)
+                        navController.navigate(MainRoutes.SECURITY) {
+                            launchSingleTop = true
+                        }
                     }
                     DrawerItem(Icons.Default.Help, "Help & Support") {
                         scope.launch { drawerState.close() }
@@ -281,27 +297,19 @@ fun MainScaffold(
                             style = MaterialTheme.typography.titleLarge
                         )
 
-                        IconButton(onClick = {
-                            Toast.makeText(
-                                context,
-                                "Search coming soon",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }) {
-                            Icon(Icons.Default.Search, contentDescription = "Search")
-                        }
-
                         // 🔥 Notification with badge logic
                         BadgedBox(
                             badge = {
-                                Box(
-                                    modifier = Modifier
-                                        .size(8.dp)
-                                        .background(
-                                            MaterialTheme.colorScheme.error,
-                                            CircleShape
-                                        )
-                                )
+                                if (notifications.isNotEmpty()) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .background(
+                                                MaterialTheme.colorScheme.error,
+                                                CircleShape
+                                            )
+                                    )
+                                }
                             }
                         ) {
                             IconButton(onClick = { showNotifications = true }) {
@@ -342,8 +350,8 @@ fun MainScaffold(
 
                                     launchSingleTop = true
 
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                                    popUpTo(MainRoutes.DASHBOARD) {
+                                        inclusive = false
                                     }
 
                                     restoreState = true
@@ -426,7 +434,14 @@ fun MainScaffold(
 
                     composable(MainRoutes.ORDERS) { OrdersScreen() }
 
-                    composable(MainRoutes.REPORTS) { ReportsScreen() }
+                    composable(MainRoutes.REPORTS) {
+
+                        val reportsViewModel: ReportsViewModel = viewModel(
+                            factory = ReportsViewModelFactory(notificationsVM) // ✅ USE PARAM
+                        )
+
+                        ReportsScreen(reportsViewModel = reportsViewModel)
+                    }
 
                     composable(MainRoutes.INVENTORY_MANAGEMENT) {
                         InventoryManagementScreen()
@@ -452,6 +467,7 @@ fun MainScaffold(
 
                 if (showNotifications) {
                     NotificationsOverlay(
+                        viewModel = notificationsVM,
                         onDismiss = { showNotifications = false }
                     )
                 }

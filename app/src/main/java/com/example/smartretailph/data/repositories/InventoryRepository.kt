@@ -1,10 +1,10 @@
 package com.example.smartretailph.data.repositories
 
-import android.R.attr.category
 import android.content.Context
 import com.example.smartretailph.data.local.AppDatabase
 import com.example.smartretailph.data.local.dao.ProductDao
 import com.example.smartretailph.data.models.Product
+import com.example.smartretailph.viewmodel.NotificationsViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -12,26 +12,28 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.json.JSONArray
-import org.json.JSONObject
 import java.util.UUID
 
 /**
  * Inventory repository backed by Room.
  */
 object InventoryRepository {
-
     private lateinit var productDao: ProductDao
-
     private val _products = MutableStateFlow<List<Product>>(emptyList())
     val products: StateFlow<List<Product>> = _products.asStateFlow()
+    lateinit var notificationsViewModel: NotificationsViewModel
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private var isInitialized = false
 
-    fun init(context: Context) {
+    fun init(
+        context: Context,
+        notificationsVM: NotificationsViewModel
+    ) {
         if (isInitialized) return
+
+        notificationsViewModel = notificationsVM
 
         val db = AppDatabase.getInstance(context.applicationContext)
         productDao = db.productDao()
@@ -39,6 +41,16 @@ object InventoryRepository {
         scope.launch {
             productDao.observeProducts().collect { list ->
                 _products.value = list
+
+                // 🔥 REAL-TIME LOW STOCK CHECK
+                list.forEach { product ->
+                    if (product.stockQuantity <= 5) {
+                        notificationsViewModel.notifyLowStock(
+                            product.name,
+                            product.stockQuantity
+                        )
+                    }
+                }
             }
         }
 
@@ -233,4 +245,3 @@ object InventoryRepository {
         productDao.upsertAll(products)
     }
 }
-
