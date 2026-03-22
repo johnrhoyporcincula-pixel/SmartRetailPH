@@ -37,7 +37,9 @@ data class ReportsState(
     val restockPredictions: List<Pair<String, Int>> = emptyList()
 )
 
-class ReportsViewModel : ViewModel() {
+class ReportsViewModel(
+    private val notificationsViewModel: NotificationsViewModel
+) : ViewModel() {
 
     // ✅ PERIOD STATE
     private val _selectedPeriod = MutableStateFlow(ReportPeriod.TODAY)
@@ -174,6 +176,13 @@ class ReportsViewModel : ViewModel() {
                     val daysLeft = (product.stockQuantity / avg).toInt()
 
                     if (daysLeft <= 5) product.name to daysLeft else null
+                }
+
+                // 🔥 TRIGGER NOTIFICATIONS
+                restockPredictions.forEach { (productName, daysLeft) ->
+                    if (daysLeft <= 2) {
+                        notificationsViewModel.notifyLowStock(productName, daysLeft)
+                    }
                 }
 
                 // ✅ SIMPLE FORECAST (NO byDay anymore)
