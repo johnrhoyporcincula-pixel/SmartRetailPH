@@ -11,7 +11,6 @@ import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,45 +18,20 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.smartretailph.viewmodel.NotificationsViewModel
-import java.util.UUID
-
-data class AppNotification(
-    val id: String = UUID.randomUUID().toString(),
-    val title: String,
-    val message: String,
-    val timestamp: Long = System.currentTimeMillis(),
-    val type: NotificationType
-)
-
-enum class NotificationType {
-    LOW_STOCK,
-    NEW_ORDER,
-    INFO
-}
 
 @Composable
 fun NotificationsOverlay(
-    viewModel: NotificationsViewModel,
     onDismiss: () -> Unit
 ) {
 
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.35f))
+            .clickable { onDismiss() }
     ) {
 
-        // 🔹 Background (ONLY this is clickable)
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .background(Color.Black.copy(alpha = 0.35f))
-                .clickable { onDismiss() }
-        )
-
-        // 🔹 Popup (NOT clickable outside)
         NotificationsPopup(
-            viewModel = viewModel,
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(top = 56.dp, end = 16.dp)
@@ -69,11 +43,9 @@ fun NotificationsOverlay(
 
 @Composable
 fun NotificationsPopup(
-    viewModel: NotificationsViewModel,
     modifier: Modifier = Modifier,
     onDismiss: () -> Unit
 ) {
-    val notifications = viewModel.notifications.collectAsState()
 
     Card(
         modifier = modifier
@@ -95,46 +67,47 @@ fun NotificationsPopup(
 
             Divider()
 
-            if (notifications.value.isEmpty()) {
-                Text(
-                    text = "No notifications",
-                    modifier = Modifier.padding(16.dp)
-                )
-            } else {
-                notifications.value.forEach { notif ->
+            NotificationItem(
+                icon = Icons.Default.Warning,
+                iconColor = Color(0xFFF59E0B),
+                iconBg = Color(0xFFFFF3CD),
+                title = "Low Stock Alert",
+                message = "Whole Milk 1L is running low (12 units left)",
+                time = "2 hours ago"
+            )
 
-                    val (icon, color, bg) = when (notif.type) {
-                        NotificationType.LOW_STOCK -> Triple(
-                            Icons.Default.Warning,
-                            Color(0xFFF59E0B),
-                            Color(0xFFFFF3CD)
-                        )
+            Divider()
 
-                        NotificationType.NEW_ORDER -> Triple(
-                            Icons.Default.ShoppingCart,
-                            Color(0xFF16A34A),
-                            Color(0xFFE6F7EC)
-                        )
+            NotificationItem(
+                icon = Icons.Default.Notifications,
+                iconColor = Color(0xFF2563EB),
+                iconBg = Color(0xFFE8F0FE),
+                title = "New Order Received",
+                message = "Order #ORD-1234 has been placed",
+                time = "4 hours ago"
+            )
 
-                        else -> Triple(
-                            Icons.Default.Notifications,
-                            Color(0xFF2563EB),
-                            Color(0xFFE8F0FE)
-                        )
-                    }
+            Divider()
 
-                    NotificationItem(
-                        icon = icon,
-                        iconColor = color,
-                        iconBg = bg,
-                        title = notif.title,
-                        message = notif.message,
-                        time = "Just now"
-                    )
+            NotificationItem(
+                icon = Icons.Default.ShoppingCart,
+                iconColor = Color(0xFF16A34A),
+                iconBg = Color(0xFFE6F7EC),
+                title = "Product Added",
+                message = "Coca-Cola 500ml added to inventory",
+                time = "6 hours ago"
+            )
 
-                    Divider()
-                }
-            }
+            Divider()
+
+            Text(
+                text = "View All Notifications",
+                color = Color(0xFF2563EB),
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(16.dp)
+            )
         }
     }
 }

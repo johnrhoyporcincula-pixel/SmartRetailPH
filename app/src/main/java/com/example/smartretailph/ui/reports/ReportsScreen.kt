@@ -31,6 +31,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.smartretailph.viewmodel.ReportsViewModel
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.horizontalScroll
@@ -55,7 +56,7 @@ enum class ReportPeriod {
 @Composable
 fun ReportsScreen(
     modifier: Modifier = Modifier,
-    reportsViewModel: ReportsViewModel
+    reportsViewModel: ReportsViewModel = viewModel()
 ) {
     val state by reportsViewModel.state.collectAsState()
     val selectedPeriod by reportsViewModel.selectedPeriod.collectAsState()

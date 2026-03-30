@@ -42,7 +42,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -55,7 +54,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.smartretailph.data.models.Product
 import com.example.smartretailph.viewmodel.InventoryViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,7 +62,7 @@ fun StockManagementScreen(
     inventoryViewModel: InventoryViewModel
 ) {
     var selectedProduct by remember {
-        mutableStateOf<Product?>(null)
+        mutableStateOf<com.example.smartretailph.data.models.Product?>(null)
     }
 
     var showRestockSheet by remember {
@@ -78,16 +76,11 @@ fun StockManagementScreen(
 
     var searchQuery by remember { mutableStateOf("") }
 
-    val filteredProducts = products
-        .filter {
-            searchQuery.isBlank() ||
-                    it.name.contains(searchQuery, true) ||
-                    it.sku.contains(searchQuery, true)
-        }
-        .sortedWith(
-            compareBy<Product> { if (it.stockQuantity <= 5) 0 else 1 }
-                .thenBy { it.stockQuantity }
-        )
+    val filteredProducts = products.filter {
+        searchQuery.isBlank() ||
+                it.name.contains(searchQuery, true) ||
+                it.sku.contains(searchQuery, true)
+    }
 
     val totalItems = products.size
     val lowStock = products.count { it.stockQuantity <= 5 }
@@ -99,7 +92,11 @@ fun StockManagementScreen(
             .padding(16.dp)
     ) {
 
-        // SUMMARY CARDS
+        /*
+        ---------------------------
+        SUMMARY CARDS
+        ---------------------------
+        */
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -133,7 +130,11 @@ fun StockManagementScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // SEARCH + ACTIONS
+        /*
+        ---------------------------
+        SEARCH + ACTIONS
+        ---------------------------
+        */
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -217,7 +218,11 @@ fun StockManagementScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // PRODUCT LIST
+        /*
+        ---------------------------
+        PRODUCT LIST
+        ---------------------------
+        */
 
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -281,7 +286,7 @@ fun RestockBottomSheet(
     onClose: () -> Unit
 ) {
 
-    var quantity by remember { mutableIntStateOf(1) }
+    var quantity by remember { mutableStateOf(1) }
     val context = LocalContext.current
 
     Column(
@@ -635,3 +640,4 @@ fun InventoryGradientCard(
         }
     }
 }
+

@@ -9,9 +9,6 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
 
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
-
 data class ProductInsight(
     val name: String,
     val category: String,
@@ -40,18 +37,7 @@ data class ReportsState(
     val restockPredictions: List<Pair<String, Int>> = emptyList()
 )
 
-class ReportsViewModelFactory(
-    private val notificationsViewModel: NotificationsViewModel
-) : ViewModelProvider.Factory {
-
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return ReportsViewModel(notificationsViewModel) as T
-    }
-}
-
-class ReportsViewModel(
-    private val notificationsViewModel: NotificationsViewModel
-) : ViewModel() {
+class ReportsViewModel : ViewModel() {
 
     // ✅ PERIOD STATE
     private val _selectedPeriod = MutableStateFlow(ReportPeriod.TODAY)
@@ -180,9 +166,14 @@ class ReportsViewModel(
                     avgDailySalesMap[key] = avgDailySalesMap[key]!! / divisor
                 }
 
+                // ✅ RESTOCK PREDICTIONS
                 val restockPredictions = products.mapNotNull { product ->
-                    val stock = product.stockQuantity
-                    if (stock <= 5) product.name to stock else null
+                    val avg = avgDailySalesMap[product.id] ?: return@mapNotNull null
+                    if (avg <= 0) return@mapNotNull null
+
+                    val daysLeft = (product.stockQuantity / avg).toInt()
+
+                    if (daysLeft <= 5) product.name to daysLeft else null
                 }
 
                 // ✅ SIMPLE FORECAST (NO byDay anymore)
