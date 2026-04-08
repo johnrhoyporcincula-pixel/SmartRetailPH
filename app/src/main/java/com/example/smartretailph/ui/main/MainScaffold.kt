@@ -186,7 +186,16 @@ fun MainScaffold(
 
                     DrawerItem(Icons.Default.Inventory2, "Inventory Management") {
                         scope.launch { drawerState.close() }
-                        navController.navigate(MainRoutes.INVENTORY_MANAGEMENT)
+
+                        navController.navigate(MainRoutes.INVENTORY_MANAGEMENT) {
+                            launchSingleTop = true
+
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = false
+                            }
+
+                            restoreState = false
+                        }
                     }
 
                     DrawerItem(Icons.Default.Security, "Privacy & Security") {
@@ -342,11 +351,11 @@ fun MainScaffold(
 
                                     launchSingleTop = true
 
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                                    popUpTo(MainRoutes.DASHBOARD) {
+                                        inclusive = false
                                     }
 
-                                    restoreState = true
+                                    restoreState = false
                                 }
                             },
 
