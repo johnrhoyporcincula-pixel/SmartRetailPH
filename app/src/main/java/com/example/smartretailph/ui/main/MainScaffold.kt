@@ -31,6 +31,7 @@ import com.example.smartretailph.ui.reports.ReportsScreen
 import kotlinx.coroutines.launch
 import com.example.smartretailph.ui.inventory.InventoryManagementScreen
 import android.widget.Toast
+import com.example.smartretailph.viewmodel.NotificationsViewModel
 
 enum class MainTab(
     val route: String,
@@ -62,6 +63,13 @@ fun MainScaffold(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: MainRoutes.DASHBOARD
 
+    var showNotifications by remember { mutableStateOf(false) }
+
+    // 🔥 FIX: auto-close when navigating
+    LaunchedEffect(currentRoute) {
+        showNotifications = false
+    }
+
     val currentTopBarTitle = when (currentRoute) {
         MainRoutes.DASHBOARD -> "Dashboard"
         MainRoutes.INVENTORY -> "Inventory"
@@ -83,8 +91,6 @@ fun MainScaffold(
         MainTab.ORDERS,
         MainTab.REPORTS
     )
-
-    var showNotifications by remember { mutableStateOf(false) }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -460,7 +466,12 @@ fun MainScaffold(
                 }
 
                 if (showNotifications) {
+                    val notificationsViewModel: NotificationsViewModel = remember {
+                        NotificationsViewModel()
+                    }
+
                     NotificationsOverlay(
+                        viewModel = notificationsViewModel,
                         onDismiss = { showNotifications = false }
                     )
                 }
